@@ -30,6 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
+            button1 = new Button();
             volumeStatus = new Label();
             bMute = new Button();
             volumeSlider = new TrackBar();
@@ -38,7 +39,6 @@
             currentTime = new Label();
             timestamp = new TrackBar();
             panel1 = new Panel();
-            button1 = new Button();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
@@ -60,6 +60,24 @@
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
+            // 
+            // button1
+            // 
+            button1.BackColor = SystemColors.ControlLight;
+            button1.BackgroundImage = (Image)resources.GetObject("button1.BackgroundImage");
+            button1.BackgroundImageLayout = ImageLayout.Zoom;
+            button1.Cursor = Cursors.Hand;
+            button1.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+            button1.FlatAppearance.BorderSize = 2;
+            button1.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
+            button1.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
+            button1.FlatStyle = FlatStyle.Flat;
+            button1.Font = new Font("Bahnschrift SemiLight", 20F);
+            button1.Location = new Point(49, 31);
+            button1.Name = "button1";
+            button1.Size = new Size(32, 32);
+            button1.TabIndex = 8;
+            button1.UseVisualStyleBackColor = false;
             // 
             // volumeStatus
             // 
@@ -160,24 +178,6 @@
             panel1.Size = new Size(493, 357);
             panel1.TabIndex = 1;
             // 
-            // button1
-            // 
-            button1.BackColor = SystemColors.ControlLight;
-            button1.BackgroundImage = (Image)resources.GetObject("button1.BackgroundImage");
-            button1.BackgroundImageLayout = ImageLayout.Zoom;
-            button1.Cursor = Cursors.Hand;
-            button1.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
-            button1.FlatAppearance.BorderSize = 2;
-            button1.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
-            button1.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
-            button1.FlatStyle = FlatStyle.Flat;
-            button1.Font = new Font("Bahnschrift SemiLight", 20F);
-            button1.Location = new Point(49, 31);
-            button1.Name = "button1";
-            button1.Size = new Size(32, 32);
-            button1.TabIndex = 8;
-            button1.UseVisualStyleBackColor = false;
-            // 
             // mainForm
             // 
             AllowDrop = true;
@@ -189,6 +189,7 @@
             Controls.Add(controlPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(3, 4, 3, 4);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
