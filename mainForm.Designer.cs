@@ -68,14 +68,14 @@
             button1.BackgroundImageLayout = ImageLayout.Zoom;
             button1.Cursor = Cursors.Hand;
             button1.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
-            button1.FlatAppearance.BorderSize = 2;
+            button1.FlatAppearance.BorderSize = 0;
             button1.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
             button1.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Bahnschrift SemiLight", 20F);
-            button1.Location = new Point(49, 31);
+            button1.Location = new Point(44, 48);
             button1.Name = "button1";
-            button1.Size = new Size(32, 32);
+            button1.Size = new Size(20, 20);
             button1.TabIndex = 8;
             button1.UseVisualStyleBackColor = false;
             // 
@@ -126,14 +126,14 @@
             bPlayback.BackgroundImageLayout = ImageLayout.Zoom;
             bPlayback.Cursor = Cursors.Hand;
             bPlayback.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
-            bPlayback.FlatAppearance.BorderSize = 2;
+            bPlayback.FlatAppearance.BorderSize = 0;
             bPlayback.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
             bPlayback.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bPlayback.FlatStyle = FlatStyle.Flat;
             bPlayback.Font = new Font("Bahnschrift SemiLight", 20F);
-            bPlayback.Location = new Point(8, 31);
+            bPlayback.Location = new Point(3, 38);
             bPlayback.Name = "bPlayback";
-            bPlayback.Size = new Size(32, 32);
+            bPlayback.Size = new Size(30, 30);
             bPlayback.TabIndex = 3;
             bPlayback.UseVisualStyleBackColor = false;
             // 
