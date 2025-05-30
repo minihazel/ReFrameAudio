@@ -30,7 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
-            button1 = new Button();
+            bRepeat = new Button();
             volumeStatus = new Label();
             bMute = new Button();
             volumeSlider = new TrackBar();
@@ -38,7 +38,8 @@
             endTime = new Label();
             currentTime = new Label();
             timestamp = new TrackBar();
-            panel1 = new Panel();
+            mainPanel = new Panel();
+            browserPanel = new Panel();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
@@ -48,7 +49,7 @@
             // 
             controlPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             controlPanel.BackColor = SystemColors.ControlLight;
-            controlPanel.Controls.Add(button1);
+            controlPanel.Controls.Add(bRepeat);
             controlPanel.Controls.Add(volumeStatus);
             controlPanel.Controls.Add(bMute);
             controlPanel.Controls.Add(volumeSlider);
@@ -61,23 +62,24 @@
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
             // 
-            // button1
+            // bRepeat
             // 
-            button1.BackColor = SystemColors.ControlLight;
-            button1.BackgroundImage = (Image)resources.GetObject("button1.BackgroundImage");
-            button1.BackgroundImageLayout = ImageLayout.Zoom;
-            button1.Cursor = Cursors.Hand;
-            button1.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
-            button1.FlatAppearance.BorderSize = 0;
-            button1.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
-            button1.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
-            button1.FlatStyle = FlatStyle.Flat;
-            button1.Font = new Font("Bahnschrift SemiLight", 20F);
-            button1.Location = new Point(44, 48);
-            button1.Name = "button1";
-            button1.Size = new Size(20, 20);
-            button1.TabIndex = 8;
-            button1.UseVisualStyleBackColor = false;
+            bRepeat.BackColor = SystemColors.ControlLight;
+            bRepeat.BackgroundImage = Properties.Resources.loop;
+            bRepeat.BackgroundImageLayout = ImageLayout.Zoom;
+            bRepeat.Cursor = Cursors.Hand;
+            bRepeat.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+            bRepeat.FlatAppearance.BorderSize = 0;
+            bRepeat.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
+            bRepeat.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
+            bRepeat.FlatStyle = FlatStyle.Flat;
+            bRepeat.Font = new Font("Bahnschrift SemiLight", 20F);
+            bRepeat.Location = new Point(44, 48);
+            bRepeat.Name = "bRepeat";
+            bRepeat.Size = new Size(20, 20);
+            bRepeat.TabIndex = 8;
+            bRepeat.UseVisualStyleBackColor = false;
+            bRepeat.Click += bRepeat_Click;
             // 
             // volumeStatus
             // 
@@ -122,7 +124,7 @@
             // bPlayback
             // 
             bPlayback.BackColor = SystemColors.ControlLight;
-            bPlayback.BackgroundImage = (Image)resources.GetObject("bPlayback.BackgroundImage");
+            bPlayback.BackgroundImage = Properties.Resources.pause;
             bPlayback.BackgroundImageLayout = ImageLayout.Zoom;
             bPlayback.Cursor = Cursors.Hand;
             bPlayback.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
@@ -136,6 +138,7 @@
             bPlayback.Size = new Size(30, 30);
             bPlayback.TabIndex = 3;
             bPlayback.UseVisualStyleBackColor = false;
+            bPlayback.Click += bPlayback_Click;
             // 
             // endTime
             // 
@@ -168,25 +171,38 @@
             timestamp.TabIndex = 0;
             timestamp.TickStyle = TickStyle.None;
             // 
-            // panel1
+            // mainPanel
             // 
-            panel1.AllowDrop = true;
-            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            panel1.BackColor = Color.FromArgb(32, 34, 36);
-            panel1.Location = new Point(0, 0);
-            panel1.Name = "panel1";
-            panel1.Size = new Size(493, 357);
-            panel1.TabIndex = 1;
+            mainPanel.AllowDrop = true;
+            mainPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            mainPanel.BackColor = Color.FromArgb(32, 34, 36);
+            mainPanel.Location = new Point(12, 12);
+            mainPanel.Name = "mainPanel";
+            mainPanel.Size = new Size(469, 345);
+            mainPanel.TabIndex = 1;
+            mainPanel.DragDrop += mainPanel_DragDrop;
+            mainPanel.DragEnter += mainPanel_DragEnter;
+            // 
+            // browserPanel
+            // 
+            browserPanel.AllowDrop = true;
+            browserPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            browserPanel.BackColor = Color.FromArgb(32, 34, 36);
+            browserPanel.Location = new Point(12, 12);
+            browserPanel.Name = "browserPanel";
+            browserPanel.Size = new Size(469, 345);
+            browserPanel.TabIndex = 2;
             // 
             // mainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(8F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = SystemColors.Control;
+            BackColor = Color.FromArgb(32, 34, 36);
             ClientSize = new Size(493, 432);
-            Controls.Add(panel1);
+            Controls.Add(mainPanel);
             Controls.Add(controlPanel);
+            Controls.Add(browserPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -194,6 +210,7 @@
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";
+            FormClosing += mainForm_FormClosing;
             Load += mainForm_Load;
             controlPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)volumeSlider).EndInit();
@@ -204,7 +221,7 @@
         #endregion
 
         private Panel controlPanel;
-        private Panel panel1;
+        private Panel mainPanel;
         private TrackBar timestamp;
         private Label currentTime;
         private Label endTime;
@@ -212,6 +229,7 @@
         private Button bMute;
         private TrackBar volumeSlider;
         private Label volumeStatus;
-        private Button button1;
+        private Button bRepeat;
+        private Panel browserPanel;
     }
 }
