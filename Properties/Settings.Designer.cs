@@ -118,5 +118,16 @@ namespace ReFrameAudio.Properties {
                 this["currentFilePath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection audioFolders {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["audioFolders"]));
+            }
+            set {
+                this["audioFolders"] = value;
+            }
+        }
     }
 }

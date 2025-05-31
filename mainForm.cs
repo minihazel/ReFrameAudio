@@ -1,4 +1,4 @@
-using NAudio.Wave;
+﻿using NAudio.Wave;
 using System.Timers;
 using Timer = System.Timers.Timer;
 
@@ -20,6 +20,12 @@ namespace ReFrameAudio
 
         private void mainForm_Load(object sender, EventArgs e)
         {
+            if (Properties.Settings.Default.audioFolders == null)
+            {
+                Properties.Settings.Default.audioFolders = new System.Collections.Specialized.StringCollection();
+                Properties.Settings.Default.Save();
+            }
+
             if (Properties.Settings.Default.audioVolume > 0)
             {
                 volumeSlider.Value = Properties.Settings.Default.audioVolume;
@@ -39,9 +45,10 @@ namespace ReFrameAudio
             }
 
             mainPanel.MouseWheel += mainPanel_MouseWheel;
-
             notice.DragDrop += mainPanel_DragDrop;
             notice.DragEnter += mainPanel_DragEnter;
+
+            bRemoveFolder.Visible = false;
         }
 
         private void mainPanel_MouseWheel(object sender, MouseEventArgs e)
@@ -299,6 +306,78 @@ namespace ReFrameAudio
         private void bSettings_Click(object sender, EventArgs e)
         {
             settingsPanel.BringToFront();
+        }
+
+        private void bRemoveFolder_Click(object sender, EventArgs e)
+        {
+            if (bRemoveFolder.Text.Contains("➕"))
+            {
+                string? matchFolder = availableFolders.SelectedItem?.ToString();
+                string? barFolder = barFolderName.Text.Trim();
+
+                // TO-DO:
+                // Add json for storage
+                // Add path + alias JArray object
+                // Add folder to internal audioFolders list
+            }
+
+            if (barFolderName.Text.Length > 0)
+            {
+                if (availableFolders.Items.Count > 0)
+                {
+                    string? matchFolder = availableFolders.SelectedItem?.ToString();
+                    string? barFolder = barFolderName.Text.Trim();
+
+                    if (matchFolder == barFolder)
+                    {
+                        string content = "Would you like to remove " + Path.GetFileName(barFolderName.Text) + "? This action is irreversible.";
+                        if (MessageBox.Show(content, Text) == DialogResult.Yes)
+                        {
+                            barFolderName.Text = string.Empty;
+                            barAddress.Text = string.Empty;
+                            availableFolders.Items.Remove(matchFolder);
+                        }
+                    }
+
+                }
+            }
+        }
+
+        private void availableFolders_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string? selectedFolder = availableFolders.SelectedItem?.ToString();
+            if (selectedFolder.ToLower().Contains("add"))
+            {
+                bRemoveFolder.Text = "➕ Add new folder";
+                bRemoveFolder.Visible = true;
+
+                barAddress.Select();
+            }
+            else
+            {
+                bRemoveFolder.Text = "🗑 Remove folder";
+                bRemoveFolder.Visible = true;
+            }
+        }
+
+        private void bDrawer_MouseEnter(object sender, EventArgs e)
+        {
+            bDrawer.BackgroundImage = Properties.Resources.highlightbars;
+        }
+
+        private void bDrawer_MouseLeave(object sender, EventArgs e)
+        {
+            bDrawer.BackgroundImage = Properties.Resources.bars;
+        }
+
+        private void bSettings_MouseEnter(object sender, EventArgs e)
+        {
+            bSettings.BackgroundImage = Properties.Resources.highlightaltsettings;
+        }
+
+        private void bSettings_MouseLeave(object sender, EventArgs e)
+        {
+            bSettings.BackgroundImage = Properties.Resources.altsettings;
         }
     }
 }

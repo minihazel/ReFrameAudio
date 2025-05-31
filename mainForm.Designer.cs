@@ -44,10 +44,23 @@
             bDrawer = new Button();
             bSettings = new Button();
             settingsPanel = new Panel();
+            panel2 = new Panel();
+            barFolderName = new TextBox();
+            panel1 = new Panel();
+            barAddress = new TextBox();
+            bBrowseFolder = new Button();
+            bRemoveFolder = new Button();
+            lblFolderName = new Label();
+            lblAddress = new Label();
+            lblAvailableFolders = new Label();
+            availableFolders = new ComboBox();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
             mainPanel.SuspendLayout();
+            settingsPanel.SuspendLayout();
+            panel2.SuspendLayout();
+            panel1.SuspendLayout();
             SuspendLayout();
             // 
             // controlPanel
@@ -79,7 +92,7 @@
             bRepeat.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bRepeat.FlatStyle = FlatStyle.Flat;
             bRepeat.Font = new Font("Bahnschrift SemiLight", 20F);
-            bRepeat.Location = new Point(44, 48);
+            bRepeat.Location = new Point(44, 43);
             bRepeat.Name = "bRepeat";
             bRepeat.Size = new Size(20, 20);
             bRepeat.TabIndex = 8;
@@ -183,7 +196,7 @@
             mainPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             mainPanel.BackColor = Color.FromArgb(32, 34, 36);
             mainPanel.Controls.Add(notice);
-            mainPanel.ForeColor = Color.Gray;
+            mainPanel.ForeColor = Color.DarkGray;
             mainPanel.Location = new Point(1, 30);
             mainPanel.Name = "mainPanel";
             mainPanel.Size = new Size(491, 329);
@@ -209,6 +222,7 @@
             browserPanel.AllowDrop = true;
             browserPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             browserPanel.BackColor = Color.FromArgb(32, 34, 36);
+            browserPanel.ForeColor = Color.DarkGray;
             browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
             browserPanel.Size = new Size(492, 329);
@@ -229,6 +243,8 @@
             bDrawer.TabIndex = 3;
             bDrawer.UseVisualStyleBackColor = true;
             bDrawer.Click += bDrawer_Click;
+            bDrawer.MouseEnter += bDrawer_MouseEnter;
+            bDrawer.MouseLeave += bDrawer_MouseLeave;
             // 
             // bSettings
             // 
@@ -246,16 +262,149 @@
             bSettings.TabIndex = 4;
             bSettings.UseVisualStyleBackColor = true;
             bSettings.Click += bSettings_Click;
+            bSettings.MouseEnter += bSettings_MouseEnter;
+            bSettings.MouseLeave += bSettings_MouseLeave;
             // 
             // settingsPanel
             // 
             settingsPanel.AllowDrop = true;
             settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             settingsPanel.BackColor = Color.FromArgb(32, 34, 36);
+            settingsPanel.Controls.Add(panel2);
+            settingsPanel.Controls.Add(panel1);
+            settingsPanel.Controls.Add(bBrowseFolder);
+            settingsPanel.Controls.Add(bRemoveFolder);
+            settingsPanel.Controls.Add(lblFolderName);
+            settingsPanel.Controls.Add(lblAddress);
+            settingsPanel.Controls.Add(lblAvailableFolders);
+            settingsPanel.Controls.Add(availableFolders);
+            settingsPanel.Font = new Font("Bahnschrift SemiLight", 10F);
+            settingsPanel.ForeColor = Color.DarkGray;
             settingsPanel.Location = new Point(1, 30);
             settingsPanel.Name = "settingsPanel";
             settingsPanel.Size = new Size(491, 329);
             settingsPanel.TabIndex = 5;
+            // 
+            // panel2
+            // 
+            panel2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panel2.BorderStyle = BorderStyle.FixedSingle;
+            panel2.Controls.Add(barFolderName);
+            panel2.Location = new Point(29, 207);
+            panel2.Name = "panel2";
+            panel2.Size = new Size(433, 34);
+            panel2.TabIndex = 9;
+            // 
+            // barFolderName
+            // 
+            barFolderName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            barFolderName.BackColor = Color.FromArgb(32, 34, 36);
+            barFolderName.BorderStyle = BorderStyle.None;
+            barFolderName.Font = new Font("Bahnschrift SemiLight", 12F);
+            barFolderName.ForeColor = Color.Silver;
+            barFolderName.Location = new Point(6, 4);
+            barFolderName.Name = "barFolderName";
+            barFolderName.PlaceholderText = "The folder alias";
+            barFolderName.Size = new Size(422, 20);
+            barFolderName.TabIndex = 5;
+            // 
+            // panel1
+            // 
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.BorderStyle = BorderStyle.FixedSingle;
+            panel1.Controls.Add(barAddress);
+            panel1.Location = new Point(29, 128);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(390, 34);
+            panel1.TabIndex = 8;
+            // 
+            // barAddress
+            // 
+            barAddress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            barAddress.BackColor = Color.FromArgb(32, 34, 36);
+            barAddress.BorderStyle = BorderStyle.None;
+            barAddress.Font = new Font("Bahnschrift SemiLight", 12F);
+            barAddress.ForeColor = Color.Silver;
+            barAddress.Location = new Point(6, 4);
+            barAddress.Name = "barAddress";
+            barAddress.PlaceholderText = "The path of the audio file";
+            barAddress.Size = new Size(379, 20);
+            barAddress.TabIndex = 3;
+            // 
+            // bBrowseFolder
+            // 
+            bBrowseFolder.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            bBrowseFolder.BackgroundImage = Properties.Resources.expandarrows;
+            bBrowseFolder.BackgroundImageLayout = ImageLayout.Zoom;
+            bBrowseFolder.Cursor = Cursors.Hand;
+            bBrowseFolder.FlatAppearance.BorderSize = 0;
+            bBrowseFolder.FlatAppearance.MouseDownBackColor = Color.FromArgb(54, 56, 58);
+            bBrowseFolder.FlatAppearance.MouseOverBackColor = Color.FromArgb(54, 56, 58);
+            bBrowseFolder.FlatStyle = FlatStyle.Flat;
+            bBrowseFolder.Location = new Point(427, 135);
+            bBrowseFolder.Name = "bBrowseFolder";
+            bBrowseFolder.Size = new Size(21, 21);
+            bBrowseFolder.TabIndex = 7;
+            bBrowseFolder.UseVisualStyleBackColor = true;
+            // 
+            // bRemoveFolder
+            // 
+            bRemoveFolder.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            bRemoveFolder.Cursor = Cursors.Hand;
+            bRemoveFolder.ForeColor = Color.Black;
+            bRemoveFolder.Location = new Point(286, 247);
+            bRemoveFolder.Name = "bRemoveFolder";
+            bRemoveFolder.Size = new Size(176, 38);
+            bRemoveFolder.TabIndex = 6;
+            bRemoveFolder.Text = "🗑 Remove folder";
+            bRemoveFolder.UseVisualStyleBackColor = true;
+            bRemoveFolder.Click += bRemoveFolder_Click;
+            // 
+            // lblFolderName
+            // 
+            lblFolderName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblFolderName.Location = new Point(3, 175);
+            lblFolderName.Name = "lblFolderName";
+            lblFolderName.Padding = new Padding(15, 0, 0, 0);
+            lblFolderName.Size = new Size(485, 29);
+            lblFolderName.TabIndex = 4;
+            lblFolderName.Text = "✏️ Type folder name";
+            lblFolderName.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // lblAddress
+            // 
+            lblAddress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblAddress.Location = new Point(3, 96);
+            lblAddress.Name = "lblAddress";
+            lblAddress.Padding = new Padding(15, 0, 0, 0);
+            lblAddress.Size = new Size(485, 29);
+            lblAddress.TabIndex = 2;
+            lblAddress.Text = "🔗 Address";
+            lblAddress.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // lblAvailableFolders
+            // 
+            lblAvailableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblAvailableFolders.Location = new Point(3, 5);
+            lblAvailableFolders.Name = "lblAvailableFolders";
+            lblAvailableFolders.Size = new Size(485, 38);
+            lblAvailableFolders.TabIndex = 1;
+            lblAvailableFolders.Text = "🗂 Available folders";
+            lblAvailableFolders.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // availableFolders
+            // 
+            availableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            availableFolders.Cursor = Cursors.Hand;
+            availableFolders.DropDownStyle = ComboBoxStyle.DropDownList;
+            availableFolders.Font = new Font("Bahnschrift SemiLight", 13F);
+            availableFolders.FormattingEnabled = true;
+            availableFolders.Items.AddRange(new object[] { "➕ Add new folder" });
+            availableFolders.Location = new Point(29, 46);
+            availableFolders.Name = "availableFolders";
+            availableFolders.Size = new Size(433, 29);
+            availableFolders.TabIndex = 0;
+            availableFolders.SelectedIndexChanged += availableFolders_SelectedIndexChanged;
             // 
             // mainForm
             // 
@@ -274,6 +423,7 @@
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(3, 4, 3, 4);
+            MinimumSize = new Size(509, 471);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";
@@ -284,6 +434,11 @@
             ((System.ComponentModel.ISupportInitialize)timestamp).EndInit();
             mainPanel.ResumeLayout(false);
             mainPanel.PerformLayout();
+            settingsPanel.ResumeLayout(false);
+            panel2.ResumeLayout(false);
+            panel2.PerformLayout();
+            panel1.ResumeLayout(false);
+            panel1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -304,5 +459,15 @@
         private Button bSettings;
         private Panel settingsPanel;
         private Label notice;
+        private ComboBox availableFolders;
+        private Label lblAvailableFolders;
+        private Label lblAddress;
+        private TextBox barAddress;
+        private TextBox barFolderName;
+        private Label lblFolderName;
+        private Button bRemoveFolder;
+        private Button bBrowseFolder;
+        private Panel panel1;
+        private Panel panel2;
     }
 }
