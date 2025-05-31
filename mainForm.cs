@@ -1,10 +1,15 @@
 using NAudio.Wave;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace ReFrameAudio
 {
     public partial class mainForm : Form
     {
         private bool isPaused = true;
+        private bool isBrowserOpen = false;
+
+        private Timer playbackTimer;
         private WaveOutEvent waveOut;
         private AudioFileReader audioFileReader;
 
@@ -35,21 +40,8 @@ namespace ReFrameAudio
 
             mainPanel.MouseWheel += mainPanel_MouseWheel;
 
-            /*
-            if (!string.IsNullOrEmpty(Properties.Settings.Default.currentFileName) &&
-                !string.IsNullOrEmpty(Properties.Settings.Default.currentFilePath))
-            {
-                string filePath = Properties.Settings.Default.currentFilePath;
-                string fileName = Properties.Settings.Default.currentFileName;
-
-                bool doesFileExist = File.Exists(filePath);
-                if (doesFileExist && isValidAudio(filePath))
-                {
-                    playAudio(filePath);
-                    Text = "ReFrame" + " - " + fileName;
-                }
-            }
-            */
+            notice.DragDrop += mainPanel_DragDrop;
+            notice.DragEnter += mainPanel_DragEnter;
         }
 
         private void mainPanel_MouseWheel(object sender, MouseEventArgs e)
@@ -94,8 +86,17 @@ namespace ReFrameAudio
 
         private void stopAudio()
         {
+            if (playbackTimer != null)
+            {
+                playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
+                playbackTimer.Stop();
+                playbackTimer.Dispose();
+                playbackTimer = null;
+            }
+
             if (waveOut != null)
             {
+                waveOut.PlaybackStopped -= WaveOut_PlaybackStopped;
                 waveOut.Stop();
                 waveOut.Dispose();
                 waveOut = null;
@@ -104,6 +105,7 @@ namespace ReFrameAudio
             if (audioFileReader != null)
             {
                 audioFileReader.Dispose();
+                audioFileReader.Close();
                 audioFileReader = null;
             }
         }
@@ -120,10 +122,39 @@ namespace ReFrameAudio
             waveOut.Volume = (float)volumeSlider.Value / 100f; // Set volume based on slider value
             waveOut.PlaybackStopped += WaveOut_PlaybackStopped;
 
+            timestamp.Maximum = (int)audioFileReader.TotalTime.TotalSeconds;
+            timestamp.Value = 0;
+
+            endTime.Text = audioFileReader.TotalTime.ToString(@"mm\:ss");
+
+            playbackTimer = new Timer();
+            playbackTimer.Interval = 500; // update every 0.5 seconds
+            playbackTimer.Elapsed += PlaybackTimer_Elapsed;
+
+            playbackTimer.Start();
+
             waveOut.Play();
             isPaused = false;
 
             Text = "ReFrame" + " - " + Path.GetFileName(filePath);
+        }
+
+        private void PlaybackTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
+            {
+                if (this != null)
+                {
+                    if (audioFileReader != null)
+                    {
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            timestamp.Value = Math.Min((int)audioFileReader.CurrentTime.TotalSeconds, timestamp.Maximum);
+                            currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
+                        });
+                    }
+                }
+            }
         }
 
         private void mainPanel_DragEnter(object sender, DragEventArgs e)
@@ -182,7 +213,7 @@ namespace ReFrameAudio
 
         private void WaveOut_PlaybackStopped(object sender, StoppedEventArgs args)
         {
-            if (Properties.Settings.Default.audioRepeat && args.Exception == null)
+            if (Properties.Settings.Default.audioRepeat)
             {
                 if (audioFileReader != null)
                 {
@@ -209,8 +240,6 @@ namespace ReFrameAudio
             Properties.Settings.Default.appSizeHeight = this.Height;
 
             Properties.Settings.Default.Save();
-
-            stopAudio();
         }
 
         private void bPlayback_Click(object sender, EventArgs e)
@@ -243,6 +272,33 @@ namespace ReFrameAudio
                 Properties.Settings.Default.audioRepeat = true;
                 bRepeat.BackgroundImage = Properties.Resources.loop;
             }
+        }
+
+        private void timestamp_Scroll(object sender, EventArgs e)
+        {
+            if (audioFileReader != null)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromSeconds(timestamp.Value);
+            }
+        }
+
+        private void bDrawer_Click(object sender, EventArgs e)
+        {
+            if (!isBrowserOpen)
+            {
+                browserPanel.BringToFront();
+                isBrowserOpen = true;
+            }
+            else
+            {
+                mainPanel.BringToFront();
+                isBrowserOpen = false;
+            }
+        }
+
+        private void bSettings_Click(object sender, EventArgs e)
+        {
+            settingsPanel.BringToFront();
         }
     }
 }

@@ -39,10 +39,15 @@
             currentTime = new Label();
             timestamp = new TrackBar();
             mainPanel = new Panel();
+            notice = new Label();
             browserPanel = new Panel();
+            bDrawer = new Button();
+            bSettings = new Button();
+            settingsPanel = new Panel();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
+            mainPanel.SuspendLayout();
             SuspendLayout();
             // 
             // controlPanel
@@ -129,7 +134,7 @@
             bPlayback.Cursor = Cursors.Hand;
             bPlayback.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
             bPlayback.FlatAppearance.BorderSize = 0;
-            bPlayback.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
+            bPlayback.FlatAppearance.MouseDownBackColor = SystemColors.ControlLightLight;
             bPlayback.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bPlayback.FlatStyle = FlatStyle.Flat;
             bPlayback.Font = new Font("Bahnschrift SemiLight", 20F);
@@ -170,38 +175,100 @@
             timestamp.Size = new Size(404, 23);
             timestamp.TabIndex = 0;
             timestamp.TickStyle = TickStyle.None;
+            timestamp.Scroll += timestamp_Scroll;
             // 
             // mainPanel
             // 
             mainPanel.AllowDrop = true;
             mainPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             mainPanel.BackColor = Color.FromArgb(32, 34, 36);
-            mainPanel.Location = new Point(12, 12);
+            mainPanel.Controls.Add(notice);
+            mainPanel.ForeColor = Color.Gray;
+            mainPanel.Location = new Point(1, 30);
             mainPanel.Name = "mainPanel";
-            mainPanel.Size = new Size(469, 345);
+            mainPanel.Size = new Size(491, 329);
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
+            // 
+            // notice
+            // 
+            notice.AllowDrop = true;
+            notice.Anchor = AnchorStyles.None;
+            notice.AutoSize = true;
+            notice.Font = new Font("Bahnschrift SemiLight", 9F);
+            notice.ForeColor = Color.Gray;
+            notice.Location = new Point(154, 157);
+            notice.Name = "notice";
+            notice.Size = new Size(183, 14);
+            notice.TabIndex = 0;
+            notice.Text = "📥 Drag and drop audio files here";
             // 
             // browserPanel
             // 
             browserPanel.AllowDrop = true;
             browserPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             browserPanel.BackColor = Color.FromArgb(32, 34, 36);
-            browserPanel.Location = new Point(12, 12);
+            browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
-            browserPanel.Size = new Size(469, 345);
+            browserPanel.Size = new Size(492, 329);
             browserPanel.TabIndex = 2;
+            // 
+            // bDrawer
+            // 
+            bDrawer.BackgroundImage = Properties.Resources.bars;
+            bDrawer.BackgroundImageLayout = ImageLayout.Zoom;
+            bDrawer.Cursor = Cursors.Hand;
+            bDrawer.FlatAppearance.BorderSize = 0;
+            bDrawer.FlatAppearance.MouseDownBackColor = Color.Gainsboro;
+            bDrawer.FlatAppearance.MouseOverBackColor = Color.Gainsboro;
+            bDrawer.FlatStyle = FlatStyle.Flat;
+            bDrawer.Location = new Point(6, 3);
+            bDrawer.Name = "bDrawer";
+            bDrawer.Size = new Size(24, 24);
+            bDrawer.TabIndex = 3;
+            bDrawer.UseVisualStyleBackColor = true;
+            bDrawer.Click += bDrawer_Click;
+            // 
+            // bSettings
+            // 
+            bSettings.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            bSettings.BackgroundImage = Properties.Resources.altsettings;
+            bSettings.BackgroundImageLayout = ImageLayout.Zoom;
+            bSettings.Cursor = Cursors.Hand;
+            bSettings.FlatAppearance.BorderSize = 0;
+            bSettings.FlatAppearance.MouseDownBackColor = Color.Gainsboro;
+            bSettings.FlatAppearance.MouseOverBackColor = Color.Gainsboro;
+            bSettings.FlatStyle = FlatStyle.Flat;
+            bSettings.Location = new Point(468, 6);
+            bSettings.Name = "bSettings";
+            bSettings.Size = new Size(18, 18);
+            bSettings.TabIndex = 4;
+            bSettings.UseVisualStyleBackColor = true;
+            bSettings.Click += bSettings_Click;
+            // 
+            // settingsPanel
+            // 
+            settingsPanel.AllowDrop = true;
+            settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            settingsPanel.BackColor = Color.FromArgb(32, 34, 36);
+            settingsPanel.Location = new Point(1, 30);
+            settingsPanel.Name = "settingsPanel";
+            settingsPanel.Size = new Size(491, 329);
+            settingsPanel.TabIndex = 5;
             // 
             // mainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(8F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(32, 34, 36);
+            BackColor = SystemColors.ControlLight;
             ClientSize = new Size(493, 432);
-            Controls.Add(mainPanel);
+            Controls.Add(bSettings);
+            Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(settingsPanel);
+            Controls.Add(mainPanel);
             Controls.Add(browserPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
@@ -215,6 +282,8 @@
             controlPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)volumeSlider).EndInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).EndInit();
+            mainPanel.ResumeLayout(false);
+            mainPanel.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -231,5 +300,9 @@
         private Label volumeStatus;
         private Button bRepeat;
         private Panel browserPanel;
+        private Button bDrawer;
+        private Button bSettings;
+        private Panel settingsPanel;
+        private Label notice;
     }
 }
