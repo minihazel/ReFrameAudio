@@ -121,9 +121,10 @@ namespace ReFrameAudio.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Specialized.StringCollection audioFolders {
+        [global::System.Configuration.DefaultSettingValueAttribute("{}")]
+        public string audioFolders {
             get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["audioFolders"]));
+                return ((string)(this["audioFolders"]));
             }
             set {
                 this["audioFolders"] = value;

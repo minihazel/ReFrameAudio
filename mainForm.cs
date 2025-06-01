@@ -1,13 +1,23 @@
 ﻿using NAudio.Wave;
+using System.Text.Json.Nodes;
 using System.Timers;
 using Timer = System.Timers.Timer;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace ReFrameAudio
 {
     public partial class mainForm : Form
     {
+        public string audioBaseConfig =
+            "{" +
+            "   \"folders\": []" +
+            "}";
+
         private bool isPaused = true;
         private bool isBrowserOpen = false;
+        private bool isSettingsOpen = false;
 
         private Timer playbackTimer;
         private WaveOutEvent waveOut;
@@ -20,10 +30,38 @@ namespace ReFrameAudio
 
         private void mainForm_Load(object sender, EventArgs e)
         {
-            if (Properties.Settings.Default.audioFolders == null)
+            if (string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
-                Properties.Settings.Default.audioFolders = new System.Collections.Specialized.StringCollection();
+                Properties.Settings.Default.audioFolders = audioBaseConfig;
                 Properties.Settings.Default.Save();
+            }
+
+            if (Properties.Settings.Default.audioFolders != audioBaseConfig &&
+                !string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
+            {
+                JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+                if (contentObject != null)
+                {
+                    JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
+                    if (foldersArray.Count > 0)
+                    {
+                        foreach (var folder in foldersArray)
+                        {
+                            if (folder is JObject obj)
+                            {
+                                string? alias = obj["alias"]?.ToString();
+                                string? path = obj["path"]?.ToString();
+
+                                if (string.IsNullOrEmpty(alias))
+                                {
+                                    return;
+                                }
+
+                                availableFolders.Items.Add(alias);
+                            }
+                        }
+                    }
+                }
             }
 
             if (Properties.Settings.Default.audioVolume > 0)
@@ -49,6 +87,7 @@ namespace ReFrameAudio
             notice.DragEnter += mainPanel_DragEnter;
 
             bRemoveFolder.Visible = false;
+            mainPanel.BringToFront();
         }
 
         private void mainPanel_MouseWheel(object sender, MouseEventArgs e)
@@ -150,7 +189,7 @@ namespace ReFrameAudio
         {
             if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
             {
-                if (this != null)
+                if (!this.IsDisposed && !this.Disposing)
                 {
                     if (audioFileReader != null)
                     {
@@ -247,6 +286,14 @@ namespace ReFrameAudio
             Properties.Settings.Default.appSizeHeight = this.Height;
 
             Properties.Settings.Default.Save();
+
+            if (playbackTimer != null)
+            {
+                playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
+                playbackTimer.Stop();
+                playbackTimer.Dispose();
+                playbackTimer = null;
+            }
         }
 
         private void bPlayback_Click(object sender, EventArgs e)
@@ -291,21 +338,41 @@ namespace ReFrameAudio
 
         private void bDrawer_Click(object sender, EventArgs e)
         {
-            if (!isBrowserOpen)
+            if (isSettingsOpen)
             {
-                browserPanel.BringToFront();
-                isBrowserOpen = true;
+                if (!isBrowserOpen)
+                {
+                    browserPanel.BringToFront();
+                    isBrowserOpen = true;
+                }
+                else
+                {
+                    mainPanel.BringToFront();
+                    isBrowserOpen = false;
+                }
+
+                isSettingsOpen = false;
             }
             else
             {
-                mainPanel.BringToFront();
-                isBrowserOpen = false;
+                if (!isBrowserOpen)
+                {
+                    browserPanel.BringToFront();
+                    isBrowserOpen = true;
+                }
+                else
+                {
+                    mainPanel.BringToFront();
+                    isBrowserOpen = false;
+                }
             }
         }
 
         private void bSettings_Click(object sender, EventArgs e)
         {
             settingsPanel.BringToFront();
+            isSettingsOpen = true;
+            isBrowserOpen = true;
         }
 
         private void bRemoveFolder_Click(object sender, EventArgs e)
@@ -313,32 +380,94 @@ namespace ReFrameAudio
             if (bRemoveFolder.Text.Contains("➕"))
             {
                 string? matchFolder = availableFolders.SelectedItem?.ToString();
+                string? addressPath = barAddress.Text.Trim();
                 string? barFolder = barFolderName.Text.Trim();
 
-                // TO-DO:
-                // Add json for storage
-                // Add path + alias JArray object
-                // Add folder to internal audioFolders list
-            }
-
-            if (barFolderName.Text.Length > 0)
-            {
-                if (availableFolders.Items.Count > 0)
+                if (string.IsNullOrEmpty(matchFolder))
                 {
-                    string? matchFolder = availableFolders.SelectedItem?.ToString();
-                    string? barFolder = barFolderName.Text.Trim();
+                    return;
+                }
 
-                    if (matchFolder == barFolder)
+                if (string.IsNullOrEmpty(addressPath))
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(barFolder))
+                {
+                    return;
+                }
+
+                string targetPath = addressPath;
+                string targetAlias = barFolder;
+
+                //
+                JObject configObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+                JArray folderArray = (JArray?)configObject["folders"] ?? new JArray();
+
+                bool folderExists = folderArray.Any(folder => 
+                    folder is JObject obj &&
+                    string.Equals((string?)obj["path"], targetPath, StringComparison.OrdinalIgnoreCase)
+                );
+
+                if (folderExists)
+                {
+                    MessageBox.Show("Folder path of " + barFolder + " already exists in the database! Try another path.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                else
+                {
+                    bool aliasExists = folderArray.Any(folder =>
+                       folder is JObject obj &&
+                       string.Equals((string?)obj["alias"], targetAlias, StringComparison.OrdinalIgnoreCase)
+                    );
+
+                    if (aliasExists)
                     {
-                        string content = "Would you like to remove " + Path.GetFileName(barFolderName.Text) + "? This action is irreversible.";
-                        if (MessageBox.Show(content, Text) == DialogResult.Yes)
-                        {
-                            barFolderName.Text = string.Empty;
-                            barAddress.Text = string.Empty;
-                            availableFolders.Items.Remove(matchFolder);
-                        }
+                        MessageBox.Show("Alias " + targetAlias + " already exists in the database! Try another path.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
+                }
 
+                JObject newFolder = new JObject
+                {
+                    ["alias"] = barFolder,
+                    ["path"] = @addressPath
+                };
+
+                folderArray.Add(newFolder);
+                configObject["folders"] = folderArray;
+
+                string updatedConfig = configObject.ToString(Formatting.Indented);
+                Properties.Settings.Default.audioFolders = updatedConfig;
+                Properties.Settings.Default.Save();
+
+                barAddress.Text = string.Empty;
+                barFolderName.Text = string.Empty;
+
+                MessageBox.Show("Folder " + barFolder + " successfully added to the database!", Text, MessageBoxButtons.OK);
+            }
+            else
+            {
+                if (barFolderName.Text.Length > 0)
+                {
+                    if (availableFolders.Items.Count > 0)
+                    {
+                        string? matchFolder = availableFolders.SelectedItem?.ToString();
+                        string? barFolder = barFolderName.Text.Trim();
+
+                        if (matchFolder == barFolder)
+                        {
+                            string content = "Would you like to remove " + Path.GetFileName(barFolderName.Text) + "? This action is irreversible.";
+                            if (MessageBox.Show(content, Text) == DialogResult.Yes)
+                            {
+                                barFolderName.Text = string.Empty;
+                                barAddress.Text = string.Empty;
+                                availableFolders.Items.Remove(matchFolder);
+                            }
+                        }
+
+                    }
                 }
             }
         }
@@ -346,6 +475,29 @@ namespace ReFrameAudio
         private void availableFolders_SelectedIndexChanged(object sender, EventArgs e)
         {
             string? selectedFolder = availableFolders.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selectedFolder))
+            {
+                barFolderName.Text = string.Empty;
+                barAddress.Text = string.Empty;
+                bRemoveFolder.Visible = false;
+
+                barAddress.Enabled = false;
+                barFolderName.Enabled = false;
+                bBrowseFolder.Enabled = false;
+                bRemoveFolder.Enabled = false;
+
+                return;
+            }
+            else
+            {
+                barAddress.Enabled = true;
+                barFolderName.Enabled = true;
+                bBrowseFolder.Enabled = true;
+                bRemoveFolder.Enabled = true;
+
+                settingsContent.Visible = true;
+            }
+
             if (selectedFolder.ToLower().Contains("add"))
             {
                 bRemoveFolder.Text = "➕ Add new folder";
@@ -355,6 +507,29 @@ namespace ReFrameAudio
             }
             else
             {
+                JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+                if (contentObject != null)
+                {
+                    JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
+                    if (foldersArray.Count > 0)
+                    {
+                        foreach (var folder in foldersArray)
+                        {
+                            if (folder is JObject obj)
+                            {
+                                string? alias = obj["alias"]?.ToString();
+                                string? path = obj["path"]?.ToString();
+
+                                if (!string.IsNullOrEmpty(alias) && !string.IsNullOrEmpty(path))
+                                {
+                                    barAddress.Text = path;
+                                    barFolderName.Text = alias;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 bRemoveFolder.Text = "🗑 Remove folder";
                 bRemoveFolder.Visible = true;
             }
@@ -378,6 +553,31 @@ namespace ReFrameAudio
         private void bSettings_MouseLeave(object sender, EventArgs e)
         {
             bSettings.BackgroundImage = Properties.Resources.altsettings;
+        }
+
+        private void bBrowseFolder_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select an audio folder";
+                dialog.UseDescriptionForTitle = true;
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedPath = dialog.SelectedPath;
+
+                    bool folderExists = Directory.Exists(selectedPath);
+                    if (!folderExists)
+                    {
+                        MessageBox.Show("The selected folder " + Path.GetFileName(selectedPath) + " does not exist.", "Folder Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        selectedPath = string.Empty;
+                        return;
+                    } 
+
+                    barAddress.Text = selectedPath;
+                    barFolderName.Select();
+                }
+            }
         }
     }
 }
