@@ -41,6 +41,9 @@
             mainPanel = new Panel();
             notice = new Label();
             browserPanel = new Panel();
+            panelSeparator1 = new Panel();
+            currentAudioFiles = new FlowLayoutPanel();
+            browseFolders = new ComboBox();
             bDrawer = new Button();
             bSettings = new Button();
             settingsPanel = new Panel();
@@ -59,6 +62,7 @@
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
             mainPanel.SuspendLayout();
+            browserPanel.SuspendLayout();
             settingsPanel.SuspendLayout();
             settingsContent.SuspendLayout();
             panel1.SuspendLayout();
@@ -224,11 +228,48 @@
             browserPanel.AllowDrop = true;
             browserPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             browserPanel.BackColor = Color.FromArgb(32, 34, 36);
+            browserPanel.Controls.Add(panelSeparator1);
+            browserPanel.Controls.Add(currentAudioFiles);
+            browserPanel.Controls.Add(browseFolders);
             browserPanel.ForeColor = Color.DarkGray;
             browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
             browserPanel.Size = new Size(492, 329);
             browserPanel.TabIndex = 2;
+            // 
+            // panelSeparator1
+            // 
+            panelSeparator1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panelSeparator1.Location = new Point(29, 55);
+            panelSeparator1.Name = "panelSeparator1";
+            panelSeparator1.Size = new Size(433, 10);
+            panelSeparator1.TabIndex = 6;
+            panelSeparator1.Paint += panelSeparator1_Paint;
+            // 
+            // currentAudioFiles
+            // 
+            currentAudioFiles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            currentAudioFiles.AutoScroll = true;
+            currentAudioFiles.FlowDirection = FlowDirection.TopDown;
+            currentAudioFiles.Location = new Point(0, 74);
+            currentAudioFiles.Name = "currentAudioFiles";
+            currentAudioFiles.Size = new Size(492, 251);
+            currentAudioFiles.TabIndex = 5;
+            currentAudioFiles.WrapContents = false;
+            currentAudioFiles.SizeChanged += currentAudioFiles_SizeChanged;
+            // 
+            // browseFolders
+            // 
+            browseFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            browseFolders.Cursor = Cursors.Hand;
+            browseFolders.DropDownStyle = ComboBoxStyle.DropDownList;
+            browseFolders.Font = new Font("Bahnschrift SemiLight", 13F);
+            browseFolders.FormattingEnabled = true;
+            browseFolders.Location = new Point(29, 15);
+            browseFolders.Name = "browseFolders";
+            browseFolders.Size = new Size(433, 29);
+            browseFolders.TabIndex = 2;
+            browseFolders.SelectedIndexChanged += browseFolders_SelectedIndexChanged;
             // 
             // bDrawer
             // 
@@ -451,6 +492,7 @@
             ((System.ComponentModel.ISupportInitialize)timestamp).EndInit();
             mainPanel.ResumeLayout(false);
             mainPanel.PerformLayout();
+            browserPanel.ResumeLayout(false);
             settingsPanel.ResumeLayout(false);
             settingsContent.ResumeLayout(false);
             panel1.ResumeLayout(false);
@@ -488,5 +530,8 @@
         private Panel panel1;
         private Panel panel2;
         private Panel settingsContent;
+        private ComboBox browseFolders;
+        private FlowLayoutPanel currentAudioFiles;
+        private Panel panelSeparator1;
     }
 }

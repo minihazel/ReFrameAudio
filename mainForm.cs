@@ -1,10 +1,12 @@
 ﻿using NAudio.Wave;
-using System.Text.Json.Nodes;
-using System.Timers;
-using Timer = System.Timers.Timer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.Drawing.Printing;
+using System.Text.Json.Nodes;
+using System.Timers;
+using System.Windows.Forms;
+using Timer = System.Timers.Timer;
 
 namespace ReFrameAudio
 {
@@ -58,6 +60,7 @@ namespace ReFrameAudio
                                 }
 
                                 availableFolders.Items.Add(alias);
+                                browseFolders.Items.Add(alias);
                             }
                         }
                     }
@@ -88,6 +91,83 @@ namespace ReFrameAudio
 
             bRemoveFolder.Visible = false;
             mainPanel.BringToFront();
+
+            currentAudioFiles.Layout += (s, e) =>
+            {
+                currentAudioFiles.HorizontalScroll.Value = 0;
+                currentAudioFiles.VerticalScroll.Value = 1;
+                currentAudioFiles.PerformLayout();
+            };
+        }
+
+        private async void listAudioFilesAsync(string[] audioFiles)
+        {
+            List<Button> buttonList = await Task.Run(() =>
+            {
+                var list = new List<Button>();
+                for (int i = 0; i < audioFiles.Length; i++)
+                {
+                    Button newFile = new Button();
+                    newFile.Parent = currentAudioFiles;
+                    newFile.AutoSize = false;
+                    newFile.Name = $"audioFile{i}";
+                    newFile.Font = new Font("Bahnschrift Light", 9, FontStyle.Regular);
+                    newFile.Text = Path.GetFileName(audioFiles[i]);
+                    newFile.ForeColor = Color.DarkGray;
+                    newFile.BackColor = newFile.Parent.BackColor;
+                    newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+                    newFile.FlatAppearance.BorderSize = 0;
+                    newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
+                    newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
+                    newFile.FlatStyle = FlatStyle.Flat;
+                    newFile.TextAlign = ContentAlignment.MiddleLeft;
+                    newFile.Margin = new Padding(0, 1, 0, 0);
+
+                    newFile.Size = new Size(newFile.Parent.Width, 32);
+                    newFile.Cursor = Cursors.Hand;
+
+                    list.Add(newFile);
+                }
+
+                return list;
+            });
+
+            currentAudioFiles.Invoke((MethodInvoker)delegate
+            {
+                currentAudioFiles.Controls.Clear();
+                foreach (var btn in buttonList)
+                {
+                    currentAudioFiles.Controls.Add(btn);
+                }
+            });
+        }
+
+        private void listAudioFiles()
+        {
+            if (browseFolders.SelectedItem != null)
+            {
+                string? selectedFolder = browseFolders.SelectedItem?.ToString();
+                JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+                JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
+
+                foreach (var folder in foldersArray)
+                {
+                    if (folder is JObject obj)
+                    {
+                        string? alias = obj["alias"]?.ToString();
+                        string? path = obj["path"]?.ToString();
+                        if (alias == selectedFolder && !string.IsNullOrEmpty(path) && Directory.Exists(path))
+                        {
+                            string[] audioFiles = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
+                                .Where(file => isValidAudio(file))
+                                .OrderByDescending(file => File.GetLastWriteTime(file))
+                                .ToArray();
+
+                            listAudioFilesAsync(audioFiles);
+                        }
+                    }
+                }
+            }
         }
 
         private void mainPanel_MouseWheel(object sender, MouseEventArgs e)
@@ -405,7 +485,7 @@ namespace ReFrameAudio
                 JObject configObject = JObject.Parse(Properties.Settings.Default.audioFolders);
                 JArray folderArray = (JArray?)configObject["folders"] ?? new JArray();
 
-                bool folderExists = folderArray.Any(folder => 
+                bool folderExists = folderArray.Any(folder =>
                     folder is JObject obj &&
                     string.Equals((string?)obj["path"], targetPath, StringComparison.OrdinalIgnoreCase)
                 );
@@ -572,11 +652,37 @@ namespace ReFrameAudio
                         MessageBox.Show("The selected folder " + Path.GetFileName(selectedPath) + " does not exist.", "Folder Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         selectedPath = string.Empty;
                         return;
-                    } 
+                    }
 
                     barAddress.Text = selectedPath;
                     barFolderName.Select();
                 }
+            }
+        }
+
+        private void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            listAudioFiles();
+        }
+
+        private void currentAudioFiles_SizeChanged(object sender, EventArgs e)
+        {
+            int buttonWidth = currentAudioFiles.ClientSize.Width; // Adjust as needed for padding/scrollbar
+            foreach (Control ctrl in currentAudioFiles.Controls)
+            {
+                if (ctrl is Button btn)
+                {
+                    btn.Width = buttonWidth;
+                }
+            }
+        }
+
+        private void panelSeparator1_Paint(object sender, PaintEventArgs e)
+        {
+            int y = panelSeparator1.Height / 2;
+            using (Pen pen = new Pen(Color.FromArgb(100, 100, 100), 1)) // Change color and thickness as needed
+            {
+                e.Graphics.DrawLine(pen, 0, y, panelSeparator1.Width, y);
             }
         }
     }
