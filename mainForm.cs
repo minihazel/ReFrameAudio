@@ -111,26 +111,28 @@ namespace ReFrameAudio
 
         private void listAudioFiles(string[] audioFiles)
         {
-            List<Label> list = new List<Label>();
+            List<Button> list = new List<Button>();
 
             for (int i = 0; i < audioFiles.Length; i++)
             {
-                Label newFile = new Label();
+                Button newFile = new Button();
                 newFile.AutoSize = false;
                 newFile.Name = $"audioFile{i}";
                 newFile.Font = new Font("Bahnschrift", 11, FontStyle.Regular);
                 newFile.Text = Path.GetFileName(audioFiles[i]);
                 newFile.ForeColor = Color.DarkGray;
                 newFile.BackColor = Color.FromArgb(32, 34, 36);
-                // newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-                // newFile.FlatAppearance.BorderSize = 0;
-                // newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
-                // newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
+                newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+                newFile.FlatAppearance.BorderSize = 0;
+                newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
+                newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
+                /*
                 newFile.MouseEnter += new EventHandler(lbl_MouseEnter);
                 newFile.MouseLeave += new EventHandler(lbl_MouseLeave);
                 newFile.MouseDown += new MouseEventHandler(lbl_MouseDown);
                 newFile.MouseDoubleClick += new MouseEventHandler(lbl_MouseDoubleClick);
                 newFile.MouseUp += new MouseEventHandler(lbl_MouseUp);
+                */
                 newFile.FlatStyle = FlatStyle.Flat;
                 newFile.TextAlign = ContentAlignment.MiddleLeft;
                 newFile.Margin = new Padding(0, 1, 0, 0);
