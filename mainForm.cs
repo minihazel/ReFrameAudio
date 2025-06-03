@@ -39,6 +39,40 @@ namespace ReFrameAudio
             InitializeComponent();
         }
 
+        private void populateDropdowns()
+        {
+            availableFolders.Items.Clear();
+            browseFolders.Items.Clear();
+
+            availableFolders.Items.Add("➕ Add new folder");
+
+            Debug.WriteLine(Properties.Settings.Default.audioFolders);
+            JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+            if (contentObject != null)
+            {
+                JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
+                if (foldersArray.Count > 0)
+                {
+                    foreach (var folder in foldersArray)
+                    {
+                        if (folder is JObject obj)
+                        {
+                            string? alias = obj["alias"]?.ToString();
+                            string? path = obj["path"]?.ToString();
+
+                            if (string.IsNullOrEmpty(alias))
+                            {
+                                return;
+                            }
+
+                            availableFolders.Items.Add(alias);
+                            browseFolders.Items.Add(alias);
+                        }
+                    }
+                }
+            }
+        }
+
         private void mainForm_Load(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
@@ -50,30 +84,7 @@ namespace ReFrameAudio
             if (Properties.Settings.Default.audioFolders != audioBaseConfig &&
                 !string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
-                JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
-                if (contentObject != null)
-                {
-                    JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
-                    if (foldersArray.Count > 0)
-                    {
-                        foreach (var folder in foldersArray)
-                        {
-                            if (folder is JObject obj)
-                            {
-                                string? alias = obj["alias"]?.ToString();
-                                string? path = obj["path"]?.ToString();
-
-                                if (string.IsNullOrEmpty(alias))
-                                {
-                                    return;
-                                }
-
-                                availableFolders.Items.Add(alias);
-                                browseFolders.Items.Add(alias);
-                            }
-                        }
-                    }
-                }
+                populateDropdowns();
             }
 
             if (Properties.Settings.Default.audioVolume > 0)
@@ -111,6 +122,7 @@ namespace ReFrameAudio
 
         private void listAudioFiles(string[] audioFiles)
         {
+            currentAudioFiles.Controls.Clear();
             List<Button> list = new List<Button>();
 
             for (int i = 0; i < audioFiles.Length; i++)
@@ -120,19 +132,18 @@ namespace ReFrameAudio
                 newFile.Name = $"audioFile{i}";
                 newFile.Font = new Font("Bahnschrift", 11, FontStyle.Regular);
                 newFile.Text = Path.GetFileName(audioFiles[i]);
+                newFile.Tag = audioFiles[i]; // Store the file path in Tag property
                 newFile.ForeColor = Color.DarkGray;
                 newFile.BackColor = Color.FromArgb(32, 34, 36);
                 newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
                 newFile.FlatAppearance.BorderSize = 0;
                 newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
                 newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
-                /*
-                newFile.MouseEnter += new EventHandler(lbl_MouseEnter);
-                newFile.MouseLeave += new EventHandler(lbl_MouseLeave);
-                newFile.MouseDown += new MouseEventHandler(lbl_MouseDown);
-                newFile.MouseDoubleClick += new MouseEventHandler(lbl_MouseDoubleClick);
-                newFile.MouseUp += new MouseEventHandler(lbl_MouseUp);
-                */
+                newFile.MouseDown += new MouseEventHandler(btn_MouseDown);
+                newFile.MouseDoubleClick += new MouseEventHandler(btn_MouseDoubleClick);
+                // newFile.MouseEnter += new EventHandler(lbl_MouseEnter);
+                // newFile.MouseLeave += new EventHandler(lbl_MouseLeave);
+                // newFile.MouseUp += new MouseEventHandler(lbl_MouseUp);
                 newFile.FlatStyle = FlatStyle.Flat;
                 newFile.TextAlign = ContentAlignment.MiddleLeft;
                 newFile.Margin = new Padding(0, 1, 0, 0);
@@ -151,22 +162,22 @@ namespace ReFrameAudio
 
         private void lbl_MouseEnter(object sender, EventArgs e)
         {
-            System.Windows.Forms.Label label = (System.Windows.Forms.Label)sender;
-            if (label.Text != "")
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
+            if (btn.Text != "")
             {
-                if (label.BackColor != listSelectedcolor)
+                if (btn.BackColor != listSelectedcolor)
                 {
-                    label.BackColor = listHovercolor;
+                    btn.BackColor = listHovercolor;
                 }
             }
         }
 
         private void lbl_MouseLeave(object sender, EventArgs e)
         {
-            System.Windows.Forms.Label label = (System.Windows.Forms.Label)sender;
-            if (label.Text != "")
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
+            if (btn.Text != "")
             {
-                label.BackColor = listBackcolor;
+                btn.BackColor = listBackcolor;
                 /*
                 if (label.BackColor != listSelectedcolor &&
                     label.BackColor == listHovercolor)
@@ -176,51 +187,47 @@ namespace ReFrameAudio
             }
         }
 
-        private void lbl_MouseDown(object sender, MouseEventArgs e)
+        private void btn_MouseDown(object sender, MouseEventArgs e)
         {
-            System.Windows.Forms.Label label = (System.Windows.Forms.Label)sender;
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
 
-            if (label.Text != "")
+            if (btn.Text != "")
             {
-                label.BackColor = listSelectedcolor;
-
-                if (e.Button == MouseButtons.Right)
+                if (e.Clicks == 2)
                 {
-
+                    btn_MouseDoubleClick(sender, e);
                 }
             }
         }
 
-        private void lbl_MouseDoubleClick(object sender, MouseEventArgs e)
+        private void btn_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            System.Windows.Forms.Label label = (System.Windows.Forms.Label)sender;
-            if (label.Text != "")
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
+            if (btn.Text != "")
             {
-                Color activeColor = Color.DodgerBlue;
-                Button associatedBtn = null;
-
-                foreach (Control component in this.Controls)
+                string? filePath = btn.Tag?.ToString();
+                Debug.WriteLine(filePath);
+                if (string.IsNullOrEmpty(filePath))
                 {
-                    if (component is Button btn && btn.FlatAppearance.BorderColor == Color.DodgerBlue)
-                    {
-                        associatedBtn = btn;
-                        break;
-                    }
+                    MessageBox.Show("There's no valid path to fetch from the item.", "File Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
-                if (associatedBtn != null)
+                if (!File.Exists(filePath))
                 {
-
-                    label.BackColor = listSelectedcolor;
-                    label.ForeColor = Color.DodgerBlue;
+                    MessageBox.Show("The selected audio file does not exist.", "File Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
+
+                stopAudio();
+                playAudio(filePath);
             }
         }
 
         private void lbl_MouseUp(object sender, EventArgs e)
         {
-            System.Windows.Forms.Label label = (System.Windows.Forms.Label)sender;
-            if (label.Text != "")
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
+            if (btn.Text != "")
             {
                 // label.BackColor = listHovercolor;
             }
@@ -528,6 +535,13 @@ namespace ReFrameAudio
 
         private void bSettings_Click(object sender, EventArgs e)
         {
+            if (isSettingsOpen)
+            {
+                settingsPanel.SendToBack();
+                isSettingsOpen = false;
+                return;
+            }
+
             settingsPanel.BringToFront();
             isSettingsOpen = true;
             isBrowserOpen = true;
@@ -603,6 +617,7 @@ namespace ReFrameAudio
                 barAddress.Text = string.Empty;
                 barFolderName.Text = string.Empty;
 
+                populateDropdowns();
                 MessageBox.Show("Folder " + barFolder + " successfully added to the database!", Text, MessageBoxButtons.OK);
             }
             else
@@ -614,17 +629,32 @@ namespace ReFrameAudio
                         string? matchFolder = availableFolders.SelectedItem?.ToString();
                         string? barFolder = barFolderName.Text.Trim();
 
-                        if (matchFolder == barFolder)
+                        string content = "Would you like to remove " + matchFolder + "? This action is irreversible.";
+                        if (MessageBox.Show(content, Text, MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
-                            string content = "Would you like to remove " + Path.GetFileName(barFolderName.Text) + "? This action is irreversible.";
-                            if (MessageBox.Show(content, Text) == DialogResult.Yes)
+                            Debug.WriteLine("success 1");
+                            barFolderName.Text = string.Empty;
+                            barAddress.Text = string.Empty;
+                            availableFolders.Items.Remove(matchFolder);
+
+                            JObject configObject = JObject.Parse(Properties.Settings.Default.audioFolders);
+                            JArray folderArray = (JArray?)configObject["folders"] ?? new JArray();
+
+                            string? targetRemovalItem = matchFolder?.Trim();
+                            JToken? folderRemoval = folderArray.FirstOrDefault(folder =>
+                                folder is JObject obj &&
+                                string.Equals((string?)obj["alias"], targetRemovalItem, StringComparison.OrdinalIgnoreCase)
+                            );
+
+                            if (folderRemoval != null && folderRemoval is JObject folderObj)
                             {
-                                barFolderName.Text = string.Empty;
-                                barAddress.Text = string.Empty;
-                                availableFolders.Items.Remove(matchFolder);
+                                folderArray.Remove(folderObj);
+                                Properties.Settings.Default.audioFolders = configObject.ToString(Formatting.Indented);
+                                Properties.Settings.Default.Save();
+
+                                availableFolders.Select();
                             }
                         }
-
                     }
                 }
             }
