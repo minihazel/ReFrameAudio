@@ -34,9 +34,21 @@ namespace ReFrameAudio
         private WaveOutEvent waveOut;
         private AudioFileReader audioFileReader;
 
+        private void attachMouseEvent()
+        {
+            foreach (Control control in this.Controls)
+            {
+                if (control is Panel pnl)
+                {
+                    pnl.MouseWheel += mainPanel_MouseWheel;
+                }
+            }
+        }
+
         public mainForm()
         {
             InitializeComponent();
+            this.MouseWheel += mainPanel_MouseWheel;
         }
 
         private void populateDropdowns()
@@ -105,7 +117,6 @@ namespace ReFrameAudio
                 this.Size = new Size(Properties.Settings.Default.appSizeWidth, Properties.Settings.Default.appSizeHeight);
             }
 
-            mainPanel.MouseWheel += mainPanel_MouseWheel;
             notice.DragDrop += mainPanel_DragDrop;
             notice.DragEnter += mainPanel_DragEnter;
 
@@ -263,25 +274,25 @@ namespace ReFrameAudio
 
         private void mainPanel_MouseWheel(object sender, MouseEventArgs e)
         {
-            if (e.Delta > 0) // Scrolling up
+            if (e.Delta > 0)
             {
                 if (volumeSlider.Value < volumeSlider.Maximum)
                 {
-                    volumeSlider.Value += 5; // Increase volume by 5%
+                    volumeSlider.Value = Math.Min(volumeSlider.Value + 5, volumeSlider.Maximum);
                 }
             }
-            else if (e.Delta < 0) // Scrolling down
+            else if (e.Delta < 0)
             {
                 if (volumeSlider.Value > volumeSlider.Minimum)
                 {
-                    volumeSlider.Value -= 5; // Decrease volume by 5%
+                    volumeSlider.Value = Math.Max(volumeSlider.Value - 5, volumeSlider.Minimum);
                 }
             }
 
             volumeStatus.Text = volumeSlider.Value.ToString() + "%";
             if (waveOut != null && isPaused == false)
             {
-                waveOut.Volume = (float)volumeSlider.Value / 100f; // Set volume based on slider value
+                waveOut.Volume = (float)volumeSlider.Value / 100f;
             }
         }
 
@@ -358,19 +369,25 @@ namespace ReFrameAudio
 
         private void PlaybackTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
+            try
             {
-                if (!this.IsDisposed && !this.Disposing)
+                if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
                 {
-                    if (audioFileReader != null)
+                    if (!this.IsDisposed && !this.Disposing)
                     {
-                        this.Invoke((MethodInvoker)delegate
+                        if (audioFileReader != null)
                         {
-                            timestamp.Value = Math.Min((int)audioFileReader.CurrentTime.TotalSeconds, timestamp.Maximum);
-                            currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
-                        });
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                timestamp.Value = Math.Min((int)audioFileReader.CurrentTime.TotalSeconds, timestamp.Maximum);
+                                currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
+                            });
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
             }
         }
 

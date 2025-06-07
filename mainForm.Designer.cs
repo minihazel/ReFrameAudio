@@ -474,9 +474,9 @@
             Controls.Add(bSettings);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(browserPanel);
             Controls.Add(settingsPanel);
             Controls.Add(mainPanel);
-            Controls.Add(browserPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
