@@ -42,8 +42,7 @@
             mainPanel = new Panel();
             notice = new Label();
             browserPanel = new Panel();
-            panelSeparator1 = new Panel();
-            currentAudioFiles = new FlowLayoutPanel();
+            panelBrowser = new Panel();
             browseFolders = new ComboBox();
             bDrawer = new Button();
             bSettings = new Button();
@@ -214,17 +213,21 @@
             timestamp.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             timestamp.AutoSize = false;
             timestamp.Location = new Point(44, 2);
+            timestamp.Maximum = 1000;
             timestamp.Name = "timestamp";
             timestamp.Size = new Size(404, 23);
             timestamp.TabIndex = 0;
             timestamp.TickStyle = TickStyle.None;
             timestamp.Scroll += timestamp_Scroll;
+            timestamp.MouseDown += timestamp_MouseDown;
+            timestamp.MouseMove += timestamp_MouseMove;
+            timestamp.MouseUp += timestamp_MouseUp;
             // 
             // mainPanel
             // 
             mainPanel.AllowDrop = true;
             mainPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            mainPanel.BackColor = Color.FromArgb(32, 34, 36);
+            mainPanel.BackColor = Color.FromArgb(28, 30, 32);
             mainPanel.Controls.Add(notice);
             mainPanel.ForeColor = Color.DarkGray;
             mainPanel.Location = new Point(1, 30);
@@ -233,6 +236,7 @@
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
+            mainPanel.Paint += mainPanel_Paint;
             mainPanel.MouseDoubleClick += mainPanel_MouseDoubleClick;
             // 
             // notice
@@ -247,52 +251,40 @@
             notice.Size = new Size(378, 14);
             notice.TabIndex = 0;
             notice.Text = "📥 Drag and drop audio files here, alternatively double-click anywhere";
+            notice.DragDrop += notice_DragDrop;
+            notice.DragEnter += notice_DragEnter;
             // 
             // browserPanel
             // 
             browserPanel.AllowDrop = true;
             browserPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            browserPanel.BackColor = Color.FromArgb(32, 34, 36);
-            browserPanel.Controls.Add(panelSeparator1);
-            browserPanel.Controls.Add(currentAudioFiles);
-            browserPanel.Controls.Add(browseFolders);
+            browserPanel.BackColor = Color.FromArgb(28, 30, 32);
+            browserPanel.Controls.Add(panelBrowser);
             browserPanel.ForeColor = Color.DarkGray;
             browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
             browserPanel.Size = new Size(492, 329);
             browserPanel.TabIndex = 2;
             // 
-            // panelSeparator1
+            // panelBrowser
             // 
-            panelSeparator1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            panelSeparator1.Location = new Point(29, 55);
-            panelSeparator1.Name = "panelSeparator1";
-            panelSeparator1.Size = new Size(433, 10);
-            panelSeparator1.TabIndex = 6;
-            panelSeparator1.Paint += panelSeparator1_Paint;
-            // 
-            // currentAudioFiles
-            // 
-            currentAudioFiles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            currentAudioFiles.AutoScroll = true;
-            currentAudioFiles.FlowDirection = FlowDirection.TopDown;
-            currentAudioFiles.Location = new Point(0, 74);
-            currentAudioFiles.Name = "currentAudioFiles";
-            currentAudioFiles.Size = new Size(492, 251);
-            currentAudioFiles.TabIndex = 5;
-            currentAudioFiles.WrapContents = false;
-            currentAudioFiles.SizeChanged += currentAudioFiles_SizeChanged;
+            panelBrowser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panelBrowser.AutoScroll = true;
+            panelBrowser.Location = new Point(1, 5);
+            panelBrowser.Name = "panelBrowser";
+            panelBrowser.Size = new Size(490, 320);
+            panelBrowser.TabIndex = 7;
             // 
             // browseFolders
             // 
             browseFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             browseFolders.Cursor = Cursors.Hand;
             browseFolders.DropDownStyle = ComboBoxStyle.DropDownList;
-            browseFolders.Font = new Font("Bahnschrift SemiLight", 13F);
+            browseFolders.Font = new Font("Bahnschrift SemiLight", 10F);
             browseFolders.FormattingEnabled = true;
-            browseFolders.Location = new Point(29, 15);
+            browseFolders.Location = new Point(37, 3);
             browseFolders.Name = "browseFolders";
-            browseFolders.Size = new Size(433, 29);
+            browseFolders.Size = new Size(422, 24);
             browseFolders.TabIndex = 2;
             browseFolders.SelectedIndexChanged += browseFolders_SelectedIndexChanged;
             // 
@@ -337,7 +329,7 @@
             // 
             settingsPanel.AllowDrop = true;
             settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            settingsPanel.BackColor = Color.FromArgb(32, 34, 36);
+            settingsPanel.BackColor = Color.FromArgb(28, 30, 32);
             settingsPanel.Controls.Add(settingsContent);
             settingsPanel.Controls.Add(lblAvailableFolders);
             settingsPanel.Controls.Add(availableFolders);
@@ -376,7 +368,7 @@
             // barAddress
             // 
             barAddress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            barAddress.BackColor = Color.FromArgb(32, 34, 36);
+            barAddress.BackColor = Color.FromArgb(28, 30, 32);
             barAddress.BorderStyle = BorderStyle.None;
             barAddress.Enabled = false;
             barAddress.Font = new Font("Bahnschrift SemiLight", 12F);
@@ -400,7 +392,7 @@
             // barFolderName
             // 
             barFolderName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            barFolderName.BackColor = Color.FromArgb(32, 34, 36);
+            barFolderName.BackColor = Color.FromArgb(28, 30, 32);
             barFolderName.BorderStyle = BorderStyle.None;
             barFolderName.Enabled = false;
             barFolderName.Font = new Font("Bahnschrift SemiLight", 12F);
@@ -497,21 +489,24 @@
             BackColor = SystemColors.ControlLight;
             ClientSize = new Size(493, 432);
             Controls.Add(bSettings);
+            Controls.Add(browseFolders);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
-            Controls.Add(mainPanel);
             Controls.Add(browserPanel);
             Controls.Add(settingsPanel);
+            Controls.Add(mainPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
+            KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
-            MinimumSize = new Size(509, 471);
+            MinimumSize = new Size(509, 170);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";
             FormClosing += mainForm_FormClosing;
             Load += mainForm_Load;
+            KeyDown += mainForm_KeyDown;
             controlPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)volumeSlider).EndInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).EndInit();
@@ -556,8 +551,7 @@
         private Panel panel2;
         private Panel settingsContent;
         private ComboBox browseFolders;
-        private FlowLayoutPanel currentAudioFiles;
-        private Panel panelSeparator1;
         private Button bStopAudio;
+        private Panel panelBrowser;
     }
 }

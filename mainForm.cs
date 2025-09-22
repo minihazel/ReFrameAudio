@@ -1,13 +1,16 @@
-﻿using NAudio.Wave;
+﻿using NAudio.Utils;
+using NAudio.Wave;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Printing;
+using System.Drawing.Text;
 using System.IO;
 using System.Text.Json.Nodes;
 using System.Timers;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Header;
 using Timer = System.Timers.Timer;
 
 namespace ReFrameAudio
@@ -23,6 +26,7 @@ namespace ReFrameAudio
         private bool isPaused = true;
         private bool isBrowserOpen = false;
         private bool isSettingsOpen = false;
+        private bool isDragging = false;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -35,6 +39,13 @@ namespace ReFrameAudio
         private WaveOutEvent waveOut;
         private AudioFileReader audioFileReader;
 
+        // browser variables
+        private List<string> audioFiles = new List<string>();
+        private int itemHeight = 35; // customizable from interface
+        private float itemFontSize = 10f; // customizable from interface
+        private int hoveredIndex = -1;   // index of item under mouse
+        private int selectedIndex = -1;  // optional selection
+
         private void attachMouseEvent()
         {
             foreach (Control control in this.Controls)
@@ -42,6 +53,24 @@ namespace ReFrameAudio
                 if (control is Panel pnl)
                 {
                     pnl.MouseWheel += mainPanel_MouseWheel;
+                }
+            }
+        }
+
+        private void attachKeyboardEvent()
+        {
+            foreach (Control ctrl in this.Controls)
+            {
+                if (ctrl is Panel pnl)
+                {
+                    pnl.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Space)
+                        {
+                            bPlayback_Click(s, e);
+                            e.Handled = true;
+                        }
+                    };
                 }
             }
         }
@@ -88,14 +117,17 @@ namespace ReFrameAudio
 
         private void mainForm_Load(object sender, EventArgs e)
         {
+            panelBrowser.GetType()
+                .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(panelBrowser, true, null);
+
             if (string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
                 Properties.Settings.Default.audioFolders = audioBaseConfig;
                 Properties.Settings.Default.Save();
             }
 
-            if (Properties.Settings.Default.audioFolders != audioBaseConfig &&
-                !string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
+            if (Properties.Settings.Default.audioFolders != audioBaseConfig && !string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
                 populateDropdowns();
             }
@@ -136,58 +168,178 @@ namespace ReFrameAudio
                 bRepeat.BackgroundImage = Properties.Resources.nonloop;
             }
 
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.lastFile))
+            {
+                mainPanel.Tag = Properties.Settings.Default.lastFile;
+            }
+
             notice.DragDrop += mainPanel_DragDrop;
             notice.DragEnter += mainPanel_DragEnter;
 
             bRemoveFolder.Visible = false;
             mainPanel.BringToFront();
 
-            currentAudioFiles.Layout += (s, e) =>
-            {
-                currentAudioFiles.HorizontalScroll.Value = 0;
-                currentAudioFiles.VerticalScroll.Value = 1;
-                currentAudioFiles.PerformLayout();
-            };
+            panelBrowser.AutoScroll = true;
+            panelBrowser.Paint += panelBrowser_Paint;
+            panelBrowser.MouseMove += panelBrowser_MouseMove;
+            panelBrowser.MouseLeave += panelBrowser_MouseLeave;
+            panelBrowser.MouseClick += panelBrowser_MouseClick;
+            panelBrowser.MouseDoubleClick += panelBrowser_MouseDoubleClick;
         }
 
-        private void listAudioFiles(string[] audioFiles)
+        private void customizeItem(int height, float fontSize)
         {
-            currentAudioFiles.Controls.Clear();
-            List<Button> list = new List<Button>();
+            itemHeight = height;
+            itemFontSize = fontSize;
 
-            for (int i = 0; i < audioFiles.Length; i++)
+            panelBrowser.AutoScrollMinSize = new Size(0, audioFiles.Count * itemHeight);
+            panelBrowser.Invalidate();
+        }
+
+        private void panelBrowser_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.Clear(Color.FromArgb(28, 30, 32));
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            int startIndex = panelBrowser.VerticalScroll.Value / itemHeight;
+            int visibleCount = panelBrowser.ClientSize.Height / itemHeight + 2;
+
+            for (int i = startIndex; i < startIndex + visibleCount && i < audioFiles.Count; i++)
             {
-                Button newFile = new Button();
-                newFile.AutoSize = false;
-                newFile.Name = $"audioFile{i}";
-                newFile.Font = new Font("Bahnschrift", 11, FontStyle.Regular);
-                newFile.Text = Path.GetFileName(audioFiles[i]);
-                newFile.Tag = audioFiles[i]; // Store the file path in Tag property
-                newFile.ForeColor = Color.DarkGray;
-                newFile.BackColor = Color.FromArgb(32, 34, 36);
-                newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-                newFile.FlatAppearance.BorderSize = 0;
-                newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
-                newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
-                newFile.MouseDown += new MouseEventHandler(btn_MouseDown);
-                newFile.MouseDoubleClick += new MouseEventHandler(btn_MouseDoubleClick);
-                // newFile.MouseEnter += new EventHandler(lbl_MouseEnter);
-                // newFile.MouseLeave += new EventHandler(lbl_MouseLeave);
-                // newFile.MouseUp += new MouseEventHandler(lbl_MouseUp);
-                newFile.FlatStyle = FlatStyle.Flat;
-                newFile.TextAlign = ContentAlignment.MiddleLeft;
-                newFile.Margin = new Padding(0, 1, 0, 0);
-                newFile.Padding = new Padding(10, 0, 0, 0);
+                Rectangle itemRect = new Rectangle(0, i * itemHeight - panelBrowser.VerticalScroll.Value,
+                                                    panelBrowser.Width, itemHeight);
 
-                newFile.Size = new Size(currentAudioFiles.Size.Width, 32);
-                newFile.Cursor = Cursors.Hand;
+                bool isHovered = (i == hoveredIndex);
+                bool isSelected = (i == selectedIndex);
 
-                list.Add(newFile);
+                // 1. Background hover/selection
+                Color backColor = isSelected
+                    ? Color.FromArgb(40, 42, 44)    // selected (slightly lighter)
+                    : isHovered
+                        ? Color.FromArgb(34, 36, 38) // hovered
+                        : Color.FromArgb(28, 30, 32); // normal
+
+                // 2. Fill background
+                using (Brush backBrush = new SolidBrush(backColor))
+                {
+                    e.Graphics.FillRectangle(backBrush, itemRect);
+                }
+
+                // 3. Draw text
+                using (Brush textBrush = new SolidBrush(Color.Silver))
+                using (Font font = new Font("Bahnschrift Light", itemFontSize, FontStyle.Regular))
+                {
+                    StringFormat sf = new StringFormat {
+                        LineAlignment = StringAlignment.Center,
+                        Trimming = StringTrimming.None,
+                        FormatFlags = StringFormatFlags.NoWrap
+                    };
+
+                    e.Graphics.DrawString(Path.GetFileName(audioFiles[i]), font, textBrush,
+                                            new RectangleF(itemRect.X + 26, itemRect.Y + 2, itemRect.Width - 10, itemRect.Height), sf);
+                }
             }
+        }
 
-            Control[] allTracks = list.ToArray();
-            currentAudioFiles.Controls.AddRange(allTracks);
-            list.Clear();
+        private void panelBrowser_MouseMove(object sender, MouseEventArgs e)
+        {
+            int index = (e.Y + panelBrowser.VerticalScroll.Value) / itemHeight;
+            if (index != hoveredIndex && index >= 0 && index < audioFiles.Count)
+            {
+                hoveredIndex = index;
+                panelBrowser.Cursor = Cursors.Hand;
+                panelBrowser.Invalidate();
+            }
+        }
+
+        private void panelBrowser_MouseLeave(object sender, EventArgs e)
+        {
+            hoveredIndex = -1;
+            panelBrowser.Invalidate();
+        }
+
+        private void panelBrowser_MouseClick(object sender, MouseEventArgs e)
+        {
+            /*
+            int index = (e.Y + panelBrowser.VerticalScroll.Value) / itemHeight;
+            if (index >= 0 && index < audioFiles.Count)
+            {
+                selectedIndex = index;
+                string selectedFile = audioFiles[selectedIndex];
+                mainPanel.Tag = selectedFile;
+                stopAudio();
+                playAudio(selectedFile);
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+                isStopped = false;
+                panelBrowser.Invalidate();
+            }
+            */
+        }
+
+        private void panelBrowser_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int index = (e.Y + panelBrowser.VerticalScroll.Value) / itemHeight;
+            if (index >= 0 && index < audioFiles.Count)
+            {
+                selectedIndex = index;
+                string selectedFile = audioFiles[selectedIndex];
+                mainPanel.Tag = selectedFile;
+                stopAudio();
+                playAudio(selectedFile);
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+                isStopped = false;
+                panelBrowser.Invalidate();
+            }
+        }
+
+        private async Task listAudioFiles(string[] files)
+        {
+            selectedIndex = -1;
+            panelBrowser.Controls.Clear();
+            audioFiles = files.ToList();
+            panelBrowser.AutoScrollMinSize = new Size(0, audioFiles.Count * itemHeight);
+
+            /*
+            Button[] allButtons = await Task.Run(() =>
+            {
+                List<Button> list = new List<Button>();
+
+                for (int i = 0; i < files.Length; i++)
+                {
+                    Button newFile = new Button();
+                    newFile.AutoSize = false;
+                    newFile.Name = $"audioFile{i}";
+                    newFile.Font = new Font("Bahnschrift", 11, FontStyle.Regular);
+                    newFile.Text = Path.GetFileName(audioFiles[i]);
+                    newFile.Tag = audioFiles[i]; // Store the file path in Tag property
+                    newFile.ForeColor = Color.DarkGray;
+                    newFile.BackColor = Color.FromArgb(32, 34, 36);
+                    newFile.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+                    newFile.FlatAppearance.BorderSize = 0;
+                    newFile.FlatAppearance.MouseDownBackColor = Color.FromArgb(42, 44, 46);
+                    newFile.FlatAppearance.MouseOverBackColor = Color.FromArgb(46, 48, 50);
+                    newFile.MouseDown += new MouseEventHandler(btn_MouseDown);
+                    newFile.MouseDoubleClick += new MouseEventHandler(btn_MouseDoubleClick);
+                    newFile.DoubleClick += new EventHandler(btn_DoubleClick);
+                    newFile.FlatStyle = FlatStyle.Flat;
+                    newFile.TextAlign = ContentAlignment.MiddleLeft;
+                    newFile.Margin = new Padding(0, 1, 0, 0);
+                    newFile.Padding = new Padding(10, 0, 0, 0);
+                    newFile.Size = new Size(panelBrowser.Size.Width, 32);
+                    newFile.Cursor = Cursors.Hand;
+
+                    list.Add(newFile);
+                }
+
+                return list.ToArray();
+            });
+
+            panelBrowser.Controls.AddRange(allButtons);
+            */
         }
 
         private void lbl_MouseEnter(object sender, EventArgs e)
@@ -230,13 +382,21 @@ namespace ReFrameAudio
             }
         }
 
+        private void btn_DoubleClick(object sender, EventArgs e)
+        {
+            System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
+            if (btn.Text != "")
+            {
+                Debug.WriteLine("double click");
+            }
+        }
+
         private void btn_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             System.Windows.Forms.Button btn = (System.Windows.Forms.Button)sender;
             if (btn.Text != "")
             {
                 string? filePath = btn.Tag?.ToString();
-                Debug.WriteLine(filePath);
                 if (string.IsNullOrEmpty(filePath))
                 {
                     MessageBox.Show("There's no valid path to fetch from the item.", "File Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -249,8 +409,13 @@ namespace ReFrameAudio
                     return;
                 }
 
+                mainPanel.Tag = filePath;
                 stopAudio();
                 playAudio(filePath);
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+                isStopped = false;
+
             }
         }
 
@@ -263,7 +428,7 @@ namespace ReFrameAudio
             }
         }
 
-        private void listAudioFiles()
+        private async Task browseAudioFiles()
         {
             if (browseFolders.SelectedItem != null)
             {
@@ -271,20 +436,29 @@ namespace ReFrameAudio
                 JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
                 JArray foldersArray = (JArray?)contentObject["folders"] ?? new JArray();
 
-                foreach (var folder in foldersArray)
+                for (int i = 0; i < foldersArray.Count; i++)
                 {
-                    if (folder is JObject obj)
+                    if (foldersArray[i] is JObject obj)
                     {
                         string? alias = obj["alias"]?.ToString();
                         string? path = obj["path"]?.ToString();
-                        if (alias == selectedFolder && !string.IsNullOrEmpty(path) && Directory.Exists(path))
+
+                        if (string.IsNullOrEmpty(alias) || string.IsNullOrEmpty(path) || !Directory.Exists(path))
                         {
-                            string[] audioFiles = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
+                            continue;
+                        }
+
+                        if (alias == selectedFolder)
+                        {
+                            string[] extensions = new[] { "*.wav", "*.mp3", "*.ogg", "*.flac", "*.mp4", "*.mkv", "*.mov" };
+                            var audioFiles = extensions
+                                .SelectMany(ext => Directory.GetFiles(path, ext, SearchOption.TopDirectoryOnly))
                                 .Where(file => isValidAudio(file))
                                 .OrderByDescending(file => File.GetLastWriteTime(file))
                                 .ToArray();
 
-                            listAudioFiles(audioFiles);
+                            await listAudioFiles(audioFiles);
+                            break;
                         }
                     }
                 }
@@ -326,7 +500,11 @@ namespace ReFrameAudio
         {
             if (volumePercent <= 0.0f) return 0.0f;
 
-            float dB = -30.0f + (30.0f * volumePercent / 100.0f);
+            float normalized = volumePercent / 100.0f;
+            float mindB = -40.0f;
+            float maxdB = 0.0f;
+
+            float dB = mindB + (maxdB - mindB) * normalized;
             return (float)Math.Pow(10.0f, dB / 20.0f);
         }
 
@@ -365,6 +543,11 @@ namespace ReFrameAudio
                 audioFileReader.Close();
                 audioFileReader = null;
             }
+
+            currentTime.Text = "00:00";
+            endTime.Text = "00:00";
+            timestamp.Maximum = 100;
+            timestamp.Value = 0;
         }
 
         private void playAudio(string filePath)
@@ -380,20 +563,21 @@ namespace ReFrameAudio
             waveOut.Volume = multiplyVolume((float)volumeSlider.Value);
             volumeStatus.Text = volumeSlider.Value.ToString() + "%";
 
-            timestamp.Maximum = (int)audioFileReader.TotalTime.TotalSeconds;
+            timestamp.Maximum = (int)audioFileReader.TotalTime.TotalMilliseconds;
+            timestamp.TickFrequency = timestamp.Maximum / 100;
             timestamp.Value = 0;
 
             endTime.Text = audioFileReader.TotalTime.ToString(@"mm\:ss");
 
             playbackTimer = new Timer();
-            playbackTimer.Interval = 100; // update every 0.5 seconds
+            playbackTimer.Interval = 30;
             playbackTimer.Elapsed += PlaybackTimer_Elapsed;
 
             playbackTimer.Start();
             waveOut.Play();
 
             isPaused = false;
-            Text = "ReFrame" + " - " + Path.GetFileName(filePath);
+            Text = Path.GetFileName(filePath) + " - ReFrame";
         }
 
         private void PlaybackTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -408,7 +592,10 @@ namespace ReFrameAudio
                         {
                             this.Invoke((MethodInvoker)delegate
                             {
-                                timestamp.Value = Math.Min((int)audioFileReader.CurrentTime.TotalSeconds, timestamp.Maximum);
+                                int newValue = (int)audioFileReader.CurrentTime.TotalMilliseconds;
+                                timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
+
+                                // timestamp.Value = Math.Min((int)audioFileReader.CurrentTime.TotalSeconds, timestamp.Maximum);
                                 currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
                             });
                         }
@@ -451,7 +638,6 @@ namespace ReFrameAudio
 
         private void mainPanel_DragDrop(object sender, DragEventArgs e)
         {
-
             if (e.Data != null)
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -519,6 +705,7 @@ namespace ReFrameAudio
 
         private void bPlayback_Click(object sender, EventArgs e)
         {
+            /*
             if (mainPanel.Tag == null)
             {
                 OpenFileDialog ofd = new OpenFileDialog()
@@ -548,7 +735,40 @@ namespace ReFrameAudio
                 else
                     return;
             }
+            */
 
+            if (isStopped)
+            {
+                string? currentFile = mainPanel.Tag?.ToString();
+                if (currentFile == null) return;
+
+                stopAudio();
+                playAudio(currentFile);
+
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+                isStopped = false;
+                return;
+            }
+
+            if (!isPaused)
+            {
+                if (waveOut != null)
+                    waveOut.Pause();
+
+                bPlayback.BackgroundImage = Properties.Resources.paused_play;
+                isPaused = true;
+            }
+            else
+            {
+                if (waveOut != null)
+                    waveOut.Play();
+
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+            }
+
+            /*
             if (isStopped)
             {
                 if (waveOut != null)
@@ -571,9 +791,6 @@ namespace ReFrameAudio
                             waveOut.Play();
                         }
 
-                        bPlayback.BackgroundImage = Properties.Resources.pause;
-                        isPaused = false;
-                        isStopped = false;
                     }
                     catch (Exception ex)
                     {
@@ -588,14 +805,7 @@ namespace ReFrameAudio
                     }
                 }
             }
-            else
-            {
-                if (waveOut != null)
-                    waveOut.Pause();
-
-                bPlayback.BackgroundImage = Properties.Resources.paused_play;
-                isPaused = true;
-            }
+            */
         }
 
         private void bRepeat_Click(object sender, EventArgs e)
@@ -614,9 +824,10 @@ namespace ReFrameAudio
 
         private void timestamp_Scroll(object sender, EventArgs e)
         {
+            // ???????????????
             if (audioFileReader != null)
             {
-                audioFileReader.CurrentTime = TimeSpan.FromSeconds(timestamp.Value);
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
             }
         }
 
@@ -887,29 +1098,20 @@ namespace ReFrameAudio
             }
         }
 
-        private void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
+        private async void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
         {
-            listAudioFiles();
+            await browseAudioFiles();
         }
 
-        private void currentAudioFiles_SizeChanged(object sender, EventArgs e)
+        private void panelBrowser_SizeChanged(object sender, EventArgs e)
         {
-            int buttonWidth = currentAudioFiles.ClientSize.Width; // Adjust as needed for padding/scrollbar
-            foreach (Control ctrl in currentAudioFiles.Controls)
+            int buttonWidth = panelBrowser.ClientSize.Width; // Adjust as needed for padding/scrollbar
+            foreach (Control ctrl in panelBrowser.Controls)
             {
                 if (ctrl is Button btn)
                 {
                     btn.Width = buttonWidth;
                 }
-            }
-        }
-
-        private void panelSeparator1_Paint(object sender, PaintEventArgs e)
-        {
-            int y = panelSeparator1.Height / 2;
-            using (Pen pen = new Pen(Color.FromArgb(100, 100, 100), 1)) // Change color and thickness as needed
-            {
-                e.Graphics.DrawLine(pen, 0, y, panelSeparator1.Width, y);
             }
         }
 
@@ -926,32 +1128,164 @@ namespace ReFrameAudio
 
         private void mainPanel_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog()
+            string? currentFile = mainPanel.Tag?.ToString();
+            if (currentFile == null)
             {
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                Title = "Select an audio file",
-                Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
-            };
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                string selectedFile = ofd.FileName;
-                if (string.IsNullOrEmpty(selectedFile))
+                OpenFileDialog ofd = new OpenFileDialog()
                 {
-                    return;
-                }
-                if (!File.Exists(selectedFile))
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    Title = "Select an audio file",
+                    Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
+                };
+                if (ofd.ShowDialog() == DialogResult.OK)
                 {
-                    MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    string selectedFile = ofd.FileName;
+                    if (string.IsNullOrEmpty(selectedFile))
+                    {
+                        return;
+                    }
+                    if (!File.Exists(selectedFile))
+                    {
+                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    mainPanel.Tag = selectedFile;
+                    stopAudio();
+                    playAudio(selectedFile);
+                    bPlayback.BackgroundImage = Properties.Resources.pause;
+                    isPaused = false;
                 }
-                mainPanel.Tag = selectedFile;
-                stopAudio();
-                playAudio(selectedFile);
-                bPlayback.BackgroundImage = Properties.Resources.pause;
-                isPaused = false;
             }
             else
-                return;
+            {
+                string parentFolderOfTag = Path.GetDirectoryName(currentFile);
+                OpenFileDialog ofd = new OpenFileDialog()
+                {
+                    InitialDirectory = parentFolderOfTag,
+                    Title = "Select an audio file",
+                    Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
+                };
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedFile = ofd.FileName;
+                    if (string.IsNullOrEmpty(selectedFile))
+                    {
+                        return;
+                    }
+                    if (!File.Exists(selectedFile))
+                    {
+                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    mainPanel.Tag = selectedFile;
+                    stopAudio();
+                    playAudio(selectedFile);
+                    bPlayback.BackgroundImage = Properties.Resources.pause;
+                    isPaused = false;
+                }
+            }
+        }
+
+        private void notice_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files == null || files.Length == 0)
+                {
+                    return;
+                }
+
+                if (files.Length == 1)
+                {
+                    string audioFilePath = files[0];
+
+                    bool isRealPath = File.Exists(audioFilePath);
+                    if (isRealPath)
+                    {
+                        mainPanel.Tag = audioFilePath;
+
+                        stopAudio();
+                        playAudio(audioFilePath);
+                    }
+                }
+            }
+        }
+
+        private void notice_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                    if (files == null || files.Length == 0)
+                    {
+                        e.Effect = DragDropEffects.None;
+                        return;
+                    }
+
+                    if (files.Length == 1)
+                    {
+                        e.Effect = DragDropEffects.Copy;
+                    }
+                    else
+                    {
+                        e.Effect = DragDropEffects.None;
+                    }
+                }
+                else
+                {
+                    e.Effect = DragDropEffects.None;
+                }
+            }
+        }
+
+        private void timestamp_MouseDown(object sender, MouseEventArgs e)
+        {
+            isDragging = true;
+            updateTimestamp(e.X);
+        }
+
+        private void updateTimestamp(int mouseX)
+        {
+            float percent = (float)mouseX / timestamp.Width;
+            int newValue = timestamp.Minimum + (int)((timestamp.Maximum - timestamp.Minimum) * percent);
+            newValue = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
+
+            timestamp.Value = newValue;
+            if (audioFileReader != null)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
+            }
+        }
+
+        private void timestamp_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging) updateTimestamp(e.X);
+        }
+
+        private void timestamp_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
+        }
+
+        private void mainPanel_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void mainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Space)
+            {
+                bPlayback.PerformClick();
+                e.Handled = true;
+            }
+        }
+
+        private void bChangeItem_Click(object sender, EventArgs e)
+        {
         }
     }
 }
