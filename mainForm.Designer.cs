@@ -30,6 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
+            bStopAudio = new Button();
             bRepeat = new Button();
             volumeStatus = new Label();
             bMute = new Button();
@@ -73,6 +74,7 @@
             // 
             controlPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             controlPanel.BackColor = SystemColors.ControlLight;
+            controlPanel.Controls.Add(bStopAudio);
             controlPanel.Controls.Add(bRepeat);
             controlPanel.Controls.Add(volumeStatus);
             controlPanel.Controls.Add(bMute);
@@ -86,6 +88,25 @@
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
             // 
+            // bStopAudio
+            // 
+            bStopAudio.BackColor = SystemColors.ControlLight;
+            bStopAudio.BackgroundImage = Properties.Resources.stop_button;
+            bStopAudio.BackgroundImageLayout = ImageLayout.Zoom;
+            bStopAudio.Cursor = Cursors.Hand;
+            bStopAudio.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+            bStopAudio.FlatAppearance.BorderSize = 0;
+            bStopAudio.FlatAppearance.MouseDownBackColor = SystemColors.ControlLightLight;
+            bStopAudio.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
+            bStopAudio.FlatStyle = FlatStyle.Flat;
+            bStopAudio.Font = new Font("Bahnschrift SemiLight", 20F);
+            bStopAudio.Location = new Point(36, 38);
+            bStopAudio.Name = "bStopAudio";
+            bStopAudio.Size = new Size(30, 30);
+            bStopAudio.TabIndex = 9;
+            bStopAudio.UseVisualStyleBackColor = false;
+            bStopAudio.Click += bStopAudio_Click;
+            // 
             // bRepeat
             // 
             bRepeat.BackColor = SystemColors.ControlLight;
@@ -98,7 +119,7 @@
             bRepeat.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bRepeat.FlatStyle = FlatStyle.Flat;
             bRepeat.Font = new Font("Bahnschrift SemiLight", 20F);
-            bRepeat.Location = new Point(44, 43);
+            bRepeat.Location = new Point(87, 43);
             bRepeat.Name = "bRepeat";
             bRepeat.Size = new Size(20, 20);
             bRepeat.TabIndex = 8;
@@ -141,14 +162,17 @@
             volumeSlider.Maximum = 100;
             volumeSlider.Name = "volumeSlider";
             volumeSlider.Size = new Size(115, 23);
+            volumeSlider.SmallChange = 5;
             volumeSlider.TabIndex = 5;
+            volumeSlider.TickFrequency = 10;
             volumeSlider.TickStyle = TickStyle.None;
             volumeSlider.Scroll += volumeSlider_Scroll;
+            volumeSlider.ValueChanged += volumeSlider_ValueChanged;
             // 
             // bPlayback
             // 
             bPlayback.BackColor = SystemColors.ControlLight;
-            bPlayback.BackgroundImage = Properties.Resources.pause;
+            bPlayback.BackgroundImage = Properties.Resources.paused_play;
             bPlayback.BackgroundImageLayout = ImageLayout.Zoom;
             bPlayback.Cursor = Cursors.Hand;
             bPlayback.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
@@ -209,6 +233,7 @@
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
+            mainPanel.MouseDoubleClick += mainPanel_MouseDoubleClick;
             // 
             // notice
             // 
@@ -217,11 +242,11 @@
             notice.AutoSize = true;
             notice.Font = new Font("Bahnschrift SemiLight", 9F);
             notice.ForeColor = Color.Gray;
-            notice.Location = new Point(154, 157);
+            notice.Location = new Point(56, 157);
             notice.Name = "notice";
-            notice.Size = new Size(183, 14);
+            notice.Size = new Size(378, 14);
             notice.TabIndex = 0;
-            notice.Text = "📥 Drag and drop audio files here";
+            notice.Text = "📥 Drag and drop audio files here, alternatively double-click anywhere";
             // 
             // browserPanel
             // 
@@ -474,9 +499,9 @@
             Controls.Add(bSettings);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(mainPanel);
             Controls.Add(browserPanel);
             Controls.Add(settingsPanel);
-            Controls.Add(mainPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -533,5 +558,6 @@
         private ComboBox browseFolders;
         private FlowLayoutPanel currentAudioFiles;
         private Panel panelSeparator1;
+        private Button bStopAudio;
     }
 }

@@ -19,6 +19,7 @@ namespace ReFrameAudio
             "   \"folders\": []" +
             "}";
 
+        private bool isStopped = true;
         private bool isPaused = true;
         private bool isBrowserOpen = false;
         private bool isSettingsOpen = false;
@@ -101,11 +102,20 @@ namespace ReFrameAudio
 
             if (Properties.Settings.Default.audioVolume > 0)
             {
-                volumeSlider.Value = Properties.Settings.Default.audioVolume;
-                volumeStatus.Text = volumeSlider.Value.ToString() + "%";
+                float initialVolume = Properties.Settings.Default.audioVolume;
+                int volume_rounded = (int)Math.Round(initialVolume);
+                float multipliedVolume = multiplyVolume(volume_rounded);
+                volumeStatus.Text = volume_rounded.ToString() + "%";
+                volumeSlider.Value = volume_rounded;
             }
-
-            volumeStatus.Text = volumeSlider.Value.ToString() + "%";
+            else
+            {
+                float volume = 15.0f;
+                int volume_rounded = (int)Math.Round(volume);
+                float multipliedVolume = multiplyVolume(volume);
+                volumeStatus.Text = volume.ToString() + "%";
+                volumeSlider.Value = volume_rounded;
+            }
 
             if (Properties.Settings.Default.appLocationX != 0 && Properties.Settings.Default.appLocationY != 0)
             {
@@ -115,6 +125,15 @@ namespace ReFrameAudio
             if (Properties.Settings.Default.appSizeWidth != 0 && Properties.Settings.Default.appSizeHeight != 0)
             {
                 this.Size = new Size(Properties.Settings.Default.appSizeWidth, Properties.Settings.Default.appSizeHeight);
+            }
+
+            if (Properties.Settings.Default.audioRepeat)
+            {
+                bRepeat.BackgroundImage = Properties.Resources.loop;
+            }
+            else
+            {
+                bRepeat.BackgroundImage = Properties.Resources.nonloop;
             }
 
             notice.DragDrop += mainPanel_DragDrop;
@@ -289,21 +308,31 @@ namespace ReFrameAudio
                 }
             }
 
-            volumeStatus.Text = volumeSlider.Value.ToString() + "%";
+            updateVolume();
+        }
+
+        private void updateVolume()
+        {
+            float volume = volumeSlider.Value;
+            volumeStatus.Text = volume.ToString() + "%";
+
             if (waveOut != null && isPaused == false)
             {
-                waveOut.Volume = (float)volumeSlider.Value / 100f;
+                waveOut.Volume = multiplyVolume(volume); // Your function already handles 0%
             }
+        }
+
+        public static float multiplyVolume(float volumePercent)
+        {
+            if (volumePercent <= 0.0f) return 0.0f;
+
+            float dB = -30.0f + (30.0f * volumePercent / 100.0f);
+            return (float)Math.Pow(10.0f, dB / 20.0f);
         }
 
         private void volumeSlider_Scroll(object sender, EventArgs e)
         {
-            volumeStatus.Text = volumeSlider.Value.ToString() + "%";
-
-            if (waveOut != null && isPaused == false)
-            {
-                waveOut.Volume = (float)volumeSlider.Value / 100f; // Set volume based on slider value
-            }
+            updateVolume();
         }
 
         private bool isValidAudio(string filePath)
@@ -347,8 +376,9 @@ namespace ReFrameAudio
             audioFileReader = new AudioFileReader(filePath);
             waveOut = new WaveOutEvent();
             waveOut.Init(audioFileReader);
-            waveOut.Volume = (float)volumeSlider.Value / 100f; // Set volume based on slider value
             waveOut.PlaybackStopped += WaveOut_PlaybackStopped;
+            waveOut.Volume = multiplyVolume((float)volumeSlider.Value);
+            volumeStatus.Text = volumeSlider.Value.ToString() + "%";
 
             timestamp.Maximum = (int)audioFileReader.TotalTime.TotalSeconds;
             timestamp.Value = 0;
@@ -356,14 +386,13 @@ namespace ReFrameAudio
             endTime.Text = audioFileReader.TotalTime.ToString(@"mm\:ss");
 
             playbackTimer = new Timer();
-            playbackTimer.Interval = 500; // update every 0.5 seconds
+            playbackTimer.Interval = 100; // update every 0.5 seconds
             playbackTimer.Elapsed += PlaybackTimer_Elapsed;
 
             playbackTimer.Start();
-
             waveOut.Play();
-            isPaused = false;
 
+            isPaused = false;
             Text = "ReFrame" + " - " + Path.GetFileName(filePath);
         }
 
@@ -438,6 +467,8 @@ namespace ReFrameAudio
                     bool isRealPath = File.Exists(audioFilePath);
                     if (isRealPath)
                     {
+                        mainPanel.Tag = audioFilePath;
+
                         stopAudio();
                         playAudio(audioFilePath);
                     }
@@ -447,27 +478,30 @@ namespace ReFrameAudio
 
         private void WaveOut_PlaybackStopped(object sender, StoppedEventArgs args)
         {
+            string? currentFile = mainPanel.Tag?.ToString();
+
             if (Properties.Settings.Default.audioRepeat)
             {
                 if (audioFileReader != null)
                 {
-                    playAudio(audioFileReader.FileName);
+                    if (string.IsNullOrEmpty(currentFile)) return;
+                    stopAudio();
+                    playAudio(currentFile);
                 }
             }
             else
             {
-                stopAudio();
-                Text = "ReFrame";
+                bPlayback.BackgroundImage = Properties.Resources.paused_play;
+                isStopped = true;
             }
         }
 
         private void mainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            stopAudio();
-
             if (volumeSlider.Value > 0)
             {
-                Properties.Settings.Default.audioVolume = volumeSlider.Value;
+                Properties.Settings.Default.audioVolume = float.Parse(volumeStatus.Text.Replace("%", string.Empty));
+                Properties.Settings.Default.Save();
             }
 
             Properties.Settings.Default.appLocationX = this.Location.X;
@@ -475,24 +509,92 @@ namespace ReFrameAudio
             Properties.Settings.Default.appSizeWidth = this.Width;
             Properties.Settings.Default.appSizeHeight = this.Height;
 
+            string? currentFile = mainPanel.Tag?.ToString();
+            if (string.IsNullOrEmpty(currentFile)) return;
+            Properties.Settings.Default.lastFile = currentFile;
             Properties.Settings.Default.Save();
+
+            stopAudio();
         }
 
         private void bPlayback_Click(object sender, EventArgs e)
         {
-            if (waveOut != null && waveOut.PlaybackState == PlaybackState.Paused)
+            if (mainPanel.Tag == null)
             {
-                waveOut.Play();
-                isPaused = true;
+                OpenFileDialog ofd = new OpenFileDialog()
+                {
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    Title = "Select an audio file",
+                    Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
+                };
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedFile = ofd.FileName;
+                    if (string.IsNullOrEmpty(selectedFile))
+                    {
+                        return;
+                    }
+                    if (!File.Exists(selectedFile))
+                    {
+                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    mainPanel.Tag = selectedFile;
+                    stopAudio();
+                    playAudio(selectedFile);
+                    bPlayback.BackgroundImage = Properties.Resources.pause;
+                    isPaused = false;
+                }
+                else
+                    return;
             }
-            else if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
+
+            if (isStopped)
             {
-                waveOut.Pause();
-                isPaused = false;
+                if (waveOut != null)
+                {
+                    try
+                    {
+                        Debug.WriteLine($"waveOut.PlaybackState: {waveOut.PlaybackState}");
+
+                        if (waveOut.PlaybackState == PlaybackState.Stopped)
+                        {
+                            string? currentAudio = mainPanel.Tag?.ToString();
+                            if (!string.IsNullOrEmpty(currentAudio))
+                            {
+                                stopAudio();
+                                playAudio(currentAudio);
+                            }
+                        }
+                        else
+                        {
+                            waveOut.Play();
+                        }
+
+                        bPlayback.BackgroundImage = Properties.Resources.pause;
+                        isPaused = false;
+                        isStopped = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error playing audio: {ex.Message}");
+
+                        string? currentAudio = mainPanel.Tag?.ToString();
+                        if (!string.IsNullOrEmpty(currentAudio))
+                        {
+                            stopAudio();
+                            playAudio(currentAudio);
+                        }
+                    }
+                }
             }
             else
             {
-                MessageBox.Show("No audio is currently playing.", "Playback Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (waveOut != null)
+                    waveOut.Pause();
+
+                bPlayback.BackgroundImage = Properties.Resources.paused_play;
+                isPaused = true;
             }
         }
 
@@ -809,6 +911,47 @@ namespace ReFrameAudio
             {
                 e.Graphics.DrawLine(pen, 0, y, panelSeparator1.Width, y);
             }
+        }
+
+        private void bStopAudio_Click(object sender, EventArgs e)
+        {
+            stopAudio();
+            Text = "ReFrame";
+        }
+
+        private void volumeSlider_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void mainPanel_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog()
+            {
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                Title = "Select an audio file",
+                Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
+            };
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                string selectedFile = ofd.FileName;
+                if (string.IsNullOrEmpty(selectedFile))
+                {
+                    return;
+                }
+                if (!File.Exists(selectedFile))
+                {
+                    MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                mainPanel.Tag = selectedFile;
+                stopAudio();
+                playAudio(selectedFile);
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+            }
+            else
+                return;
         }
     }
 }

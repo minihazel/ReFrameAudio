@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ReFrameAudio.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="audioVolume" Type="System.Int32" Scope="User">
+    <Setting Name="audioVolume" Type="System.Single" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="appSizeHeight" Type="System.Int32" Scope="User">
@@ -28,6 +28,9 @@
     </Setting>
     <Setting Name="audioFolders" Type="System.String" Scope="User">
       <Value Profile="(Default)">{}</Value>
+    </Setting>
+    <Setting Name="lastFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

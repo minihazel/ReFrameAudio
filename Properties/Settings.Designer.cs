@@ -26,9 +26,9 @@ namespace ReFrameAudio.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int audioVolume {
+        public float audioVolume {
             get {
-                return ((int)(this["audioVolume"]));
+                return ((float)(this["audioVolume"]));
             }
             set {
                 this["audioVolume"] = value;
@@ -128,6 +128,18 @@ namespace ReFrameAudio.Properties {
             }
             set {
                 this["audioFolders"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string lastFile {
+            get {
+                return ((string)(this["lastFile"]));
+            }
+            set {
+                this["lastFile"] = value;
             }
         }
     }
