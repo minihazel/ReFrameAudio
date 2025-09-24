@@ -2,6 +2,7 @@
 using NAudio.Wave;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -27,6 +28,7 @@ namespace ReFrameAudio
         private bool isBrowserOpen = false;
         private bool isSettingsOpen = false;
         private bool isDragging = false;
+        private bool shouldSwitchOnPlay = false;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -173,6 +175,16 @@ namespace ReFrameAudio
                 mainPanel.Tag = Properties.Settings.Default.lastFile;
             }
 
+            if (Properties.Settings.Default.switchPage)
+            {
+                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
+            }
+            else
+            {
+                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            }
+
+            shouldSwitchOnPlay = Properties.Settings.Default.switchPage;
             notice.DragDrop += mainPanel_DragDrop;
             notice.DragEnter += mainPanel_DragEnter;
 
@@ -228,10 +240,13 @@ namespace ReFrameAudio
                 }
 
                 // 3. Draw text
-                using (Brush textBrush = new SolidBrush(Color.Silver))
+                Color foreColor = isSelected ? Color.DodgerBlue : Color.Silver;
+
+                using (Brush textBrush = new SolidBrush(foreColor))
                 using (Font font = new Font("Bahnschrift Light", itemFontSize, FontStyle.Regular))
                 {
-                    StringFormat sf = new StringFormat {
+                    StringFormat sf = new StringFormat
+                    {
                         LineAlignment = StringAlignment.Center,
                         Trimming = StringTrimming.None,
                         FormatFlags = StringFormatFlags.NoWrap
@@ -251,6 +266,12 @@ namespace ReFrameAudio
                 hoveredIndex = index;
                 panelBrowser.Cursor = Cursors.Hand;
                 panelBrowser.Invalidate();
+
+                videoToolTip.Show(audioFiles[index], this, e.Location.X + 10);
+            }
+            else
+            {
+                videoToolTip.Hide(this);
             }
         }
 
@@ -284,22 +305,36 @@ namespace ReFrameAudio
             int index = (e.Y + panelBrowser.VerticalScroll.Value) / itemHeight;
             if (index >= 0 && index < audioFiles.Count)
             {
-                selectedIndex = index;
-                string selectedFile = audioFiles[selectedIndex];
-                mainPanel.Tag = selectedFile;
-                stopAudio();
-                playAudio(selectedFile);
-                bPlayback.BackgroundImage = Properties.Resources.pause;
-                isPaused = false;
-                isStopped = false;
-                panelBrowser.Invalidate();
+                playViaTrack(index);
+
+                if (Properties.Settings.Default.switchPage)
+                {
+                    mainPanel.BringToFront();
+                    isBrowserOpen = false;
+                    isSettingsOpen = false;
+                }
             }
+        }
+
+        private void playViaTrack(int index)
+        {
+            selectedIndex = index;
+            string selectedFile = audioFiles[selectedIndex];
+            mainPanel.Tag = selectedFile;
+            stopAudio();
+            playAudio(selectedFile);
+            bPlayback.BackgroundImage = Properties.Resources.pause;
+            isPaused = false;
+            isStopped = false;
+            panelBrowser.Invalidate();
         }
 
         private async Task listAudioFiles(string[] files)
         {
-            selectedIndex = -1;
+            audioFiles.Clear();
             panelBrowser.Controls.Clear();
+
+            selectedIndex = -1;
             audioFiles = files.ToList();
             panelBrowser.AutoScrollMinSize = new Size(0, audioFiles.Count * itemHeight);
 
@@ -1286,6 +1321,22 @@ namespace ReFrameAudio
 
         private void bChangeItem_Click(object sender, EventArgs e)
         {
+        }
+
+        private void bSwitchPageOnPlay_Click(object sender, EventArgs e)
+        {
+            if (shouldSwitchOnPlay)
+            {
+                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+                Properties.Settings.Default.switchPage = false;
+                shouldSwitchOnPlay = false;
+            }
+            else
+            {
+                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
+                Properties.Settings.Default.switchPage = true;
+                shouldSwitchOnPlay = true;
+            }
         }
     }
 }

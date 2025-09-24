@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
             bStopAudio = new Button();
@@ -58,6 +59,8 @@
             bRemoveFolder = new Button();
             lblAvailableFolders = new Label();
             availableFolders = new ComboBox();
+            videoToolTip = new ToolTip(components);
+            bSwitchPageOnPlay = new Button();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
@@ -73,6 +76,7 @@
             // 
             controlPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             controlPanel.BackColor = SystemColors.ControlLight;
+            controlPanel.Controls.Add(bSwitchPageOnPlay);
             controlPanel.Controls.Add(bStopAudio);
             controlPanel.Controls.Add(bRepeat);
             controlPanel.Controls.Add(volumeStatus);
@@ -481,6 +485,29 @@
             availableFolders.TabIndex = 0;
             availableFolders.SelectedIndexChanged += availableFolders_SelectedIndexChanged;
             // 
+            // videoToolTip
+            // 
+            videoToolTip.ToolTipTitle = "File information";
+            // 
+            // bSwitchPageOnPlay
+            // 
+            bSwitchPageOnPlay.BackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            bSwitchPageOnPlay.BackgroundImageLayout = ImageLayout.Zoom;
+            bSwitchPageOnPlay.Cursor = Cursors.Hand;
+            bSwitchPageOnPlay.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+            bSwitchPageOnPlay.FlatAppearance.BorderSize = 0;
+            bSwitchPageOnPlay.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.FlatStyle = FlatStyle.Flat;
+            bSwitchPageOnPlay.Font = new Font("Bahnschrift SemiLight", 20F);
+            bSwitchPageOnPlay.Location = new Point(118, 43);
+            bSwitchPageOnPlay.Name = "bSwitchPageOnPlay";
+            bSwitchPageOnPlay.Size = new Size(20, 20);
+            bSwitchPageOnPlay.TabIndex = 10;
+            bSwitchPageOnPlay.UseVisualStyleBackColor = false;
+            bSwitchPageOnPlay.Click += bSwitchPageOnPlay_Click;
+            // 
             // mainForm
             // 
             AllowDrop = true;
@@ -492,9 +519,9 @@
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(mainPanel);
             Controls.Add(browserPanel);
             Controls.Add(settingsPanel);
-            Controls.Add(mainPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -553,5 +580,7 @@
         private ComboBox browseFolders;
         private Button bStopAudio;
         private Panel panelBrowser;
+        private ToolTip videoToolTip;
+        private Button bSwitchPageOnPlay;
     }
 }

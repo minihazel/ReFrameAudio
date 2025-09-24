@@ -142,5 +142,17 @@ namespace ReFrameAudio.Properties {
                 this["lastFile"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool switchPage {
+            get {
+                return ((bool)(this["switchPage"]));
+            }
+            set {
+                this["switchPage"] = value;
+            }
+        }
     }
 }
