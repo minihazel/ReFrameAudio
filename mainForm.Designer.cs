@@ -31,6 +31,7 @@
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
+            bSwitchPageOnPlay = new Button();
             bStopAudio = new Button();
             bRepeat = new Button();
             volumeStatus = new Label();
@@ -60,7 +61,6 @@
             lblAvailableFolders = new Label();
             availableFolders = new ComboBox();
             videoToolTip = new ToolTip(components);
-            bSwitchPageOnPlay = new Button();
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
             ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
@@ -90,6 +90,25 @@
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
+            // 
+            // bSwitchPageOnPlay
+            // 
+            bSwitchPageOnPlay.BackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            bSwitchPageOnPlay.BackgroundImageLayout = ImageLayout.Zoom;
+            bSwitchPageOnPlay.Cursor = Cursors.Hand;
+            bSwitchPageOnPlay.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+            bSwitchPageOnPlay.FlatAppearance.BorderSize = 0;
+            bSwitchPageOnPlay.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
+            bSwitchPageOnPlay.FlatStyle = FlatStyle.Flat;
+            bSwitchPageOnPlay.Font = new Font("Bahnschrift SemiLight", 20F);
+            bSwitchPageOnPlay.Location = new Point(118, 43);
+            bSwitchPageOnPlay.Name = "bSwitchPageOnPlay";
+            bSwitchPageOnPlay.Size = new Size(20, 20);
+            bSwitchPageOnPlay.TabIndex = 10;
+            bSwitchPageOnPlay.UseVisualStyleBackColor = false;
+            bSwitchPageOnPlay.Click += bSwitchPageOnPlay_Click;
             // 
             // bStopAudio
             // 
@@ -489,25 +508,6 @@
             // 
             videoToolTip.ToolTipTitle = "File information";
             // 
-            // bSwitchPageOnPlay
-            // 
-            bSwitchPageOnPlay.BackColor = SystemColors.ControlLight;
-            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
-            bSwitchPageOnPlay.BackgroundImageLayout = ImageLayout.Zoom;
-            bSwitchPageOnPlay.Cursor = Cursors.Hand;
-            bSwitchPageOnPlay.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
-            bSwitchPageOnPlay.FlatAppearance.BorderSize = 0;
-            bSwitchPageOnPlay.FlatAppearance.MouseDownBackColor = SystemColors.ControlLight;
-            bSwitchPageOnPlay.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
-            bSwitchPageOnPlay.FlatStyle = FlatStyle.Flat;
-            bSwitchPageOnPlay.Font = new Font("Bahnschrift SemiLight", 20F);
-            bSwitchPageOnPlay.Location = new Point(118, 43);
-            bSwitchPageOnPlay.Name = "bSwitchPageOnPlay";
-            bSwitchPageOnPlay.Size = new Size(20, 20);
-            bSwitchPageOnPlay.TabIndex = 10;
-            bSwitchPageOnPlay.UseVisualStyleBackColor = false;
-            bSwitchPageOnPlay.Click += bSwitchPageOnPlay_Click;
-            // 
             // mainForm
             // 
             AllowDrop = true;
@@ -527,7 +527,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
-            MinimumSize = new Size(509, 170);
+            MinimumSize = new Size(509, 142);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";
