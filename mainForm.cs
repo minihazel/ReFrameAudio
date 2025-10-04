@@ -218,6 +218,8 @@ namespace ReFrameAudio
             int startIndex = panelBrowser.VerticalScroll.Value / itemHeight;
             int visibleCount = panelBrowser.ClientSize.Height / itemHeight + 2;
 
+            string formTitle = Text;
+
             for (int i = startIndex; i < startIndex + visibleCount && i < audioFiles.Count; i++)
             {
                 Rectangle itemRect = new Rectangle(0, i * itemHeight - panelBrowser.VerticalScroll.Value,
@@ -226,6 +228,9 @@ namespace ReFrameAudio
                 bool isHovered = (i == hoveredIndex);
                 bool isSelected = (i == selectedIndex);
 
+                string filename = Path.GetFileName(audioFiles[i]);
+                bool isCurrentFile = formTitle.Contains(filename);
+
                 // 1. Background hover/selection
                 Color backColor = isSelected
                     ? Color.FromArgb(40, 42, 44)    // selected (slightly lighter)
@@ -233,14 +238,24 @@ namespace ReFrameAudio
                         ? Color.FromArgb(34, 36, 38) // hovered
                         : Color.FromArgb(28, 30, 32); // normal
 
-                // 2. Fill background
+                if (isCurrentFile)
+                {
+                    backColor = Color.FromArgb(40, 42, 44);
+                }
+
+                // 2 Fill background
                 using (Brush backBrush = new SolidBrush(backColor))
                 {
                     e.Graphics.FillRectangle(backBrush, itemRect);
                 }
 
-                // 3. Draw text
+                // 3 Draw text
                 Color foreColor = isSelected ? Color.DodgerBlue : Color.Silver;
+
+                if (isCurrentFile)
+                {
+                    foreColor = Color.DodgerBlue;
+                }
 
                 using (Brush textBrush = new SolidBrush(foreColor))
                 using (Font font = new Font("Bahnschrift Light", itemFontSize, FontStyle.Regular))
@@ -932,6 +947,7 @@ namespace ReFrameAudio
 
                 if (string.IsNullOrEmpty(barFolder))
                 {
+                    barFolder = Path.GetFileName(addressPath);
                     return;
                 }
 
@@ -997,7 +1013,6 @@ namespace ReFrameAudio
                         string content = "Would you like to remove " + matchFolder + "? This action is irreversible.";
                         if (MessageBox.Show(content, Text, MessageBoxButtons.YesNo) == DialogResult.Yes)
                         {
-                            Debug.WriteLine("success 1");
                             barFolderName.Text = string.Empty;
                             barAddress.Text = string.Empty;
                             availableFolders.Items.Remove(matchFolder);
@@ -1016,6 +1031,12 @@ namespace ReFrameAudio
                                 folderArray.Remove(folderObj);
                                 Properties.Settings.Default.audioFolders = configObject.ToString(Formatting.Indented);
                                 Properties.Settings.Default.Save();
+
+                                try
+                                {
+                                    browseFolders.Items.Remove(matchFolder);
+                                }
+                                catch (Exception ex) { }
 
                                 availableFolders.Select();
                             }
@@ -1338,5 +1359,14 @@ namespace ReFrameAudio
                 shouldSwitchOnPlay = true;
             }
         }
+
+        private void barFolderName_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                bRemoveFolder.PerformClick();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
     }
 }

@@ -398,7 +398,7 @@
             barAddress.ForeColor = Color.Silver;
             barAddress.Location = new Point(6, 4);
             barAddress.Name = "barAddress";
-            barAddress.PlaceholderText = "The path of the audio file";
+            barAddress.PlaceholderText = "The path of the audio folder";
             barAddress.Size = new Size(379, 20);
             barAddress.TabIndex = 3;
             // 
@@ -425,10 +425,12 @@
             barFolderName.PlaceholderText = "The folder alias";
             barFolderName.Size = new Size(422, 20);
             barFolderName.TabIndex = 5;
+            barFolderName.KeyDown += barFolderName_KeyDown;
             // 
             // lblAddress
             // 
             lblAddress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblAddress.Font = new Font("Bahnschrift SemiLight", 9F);
             lblAddress.Location = new Point(18, 18);
             lblAddress.Name = "lblAddress";
             lblAddress.Padding = new Padding(5, 0, 0, 0);
@@ -440,6 +442,7 @@
             // lblFolderName
             // 
             lblFolderName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblFolderName.Font = new Font("Bahnschrift SemiLight", 9F);
             lblFolderName.Location = new Point(18, 97);
             lblFolderName.Name = "lblFolderName";
             lblFolderName.Padding = new Padding(5, 0, 0, 0);
@@ -483,6 +486,7 @@
             // lblAvailableFolders
             // 
             lblAvailableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblAvailableFolders.Font = new Font("Bahnschrift SemiLight", 9F);
             lblAvailableFolders.Location = new Point(3, 5);
             lblAvailableFolders.Name = "lblAvailableFolders";
             lblAvailableFolders.Size = new Size(485, 38);
@@ -519,9 +523,9 @@
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(settingsPanel);
             Controls.Add(mainPanel);
             Controls.Add(browserPanel);
-            Controls.Add(settingsPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
