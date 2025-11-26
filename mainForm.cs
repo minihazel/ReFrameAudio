@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing.Printing;
 using System.Drawing.Text;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using System.Timers;
 using System.Windows.Forms;
@@ -22,6 +23,7 @@ namespace ReFrameAudio
             "{" +
             "   \"folders\": []" +
             "}";
+        public string currentPlayingFile = string.Empty;
 
         private bool isStopped = true;
         private bool isPaused = true;
@@ -320,14 +322,19 @@ namespace ReFrameAudio
             int index = (e.Y + panelBrowser.VerticalScroll.Value) / itemHeight;
             if (index >= 0 && index < audioFiles.Count)
             {
-                playViaTrack(index);
+                initializeBrowserDoubleClick(index);
+            }
+        }
 
-                if (Properties.Settings.Default.switchPage)
-                {
-                    mainPanel.BringToFront();
-                    isBrowserOpen = false;
-                    isSettingsOpen = false;
-                }
+        private void initializeBrowserDoubleClick(int index)
+        {
+            playViaTrack(index);
+
+            if (Properties.Settings.Default.switchPage)
+            {
+                mainPanel.BringToFront();
+                isBrowserOpen = false;
+                isSettingsOpen = false;
             }
         }
 
@@ -338,6 +345,34 @@ namespace ReFrameAudio
             mainPanel.Tag = selectedFile;
             stopAudio();
             playAudio(selectedFile);
+            bPlayback.BackgroundImage = Properties.Resources.pause;
+            isPaused = false;
+            isStopped = false;
+            panelBrowser.Invalidate();
+        }
+
+        private void playSelection(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return;
+            }
+            if (!File.Exists(fileName))
+            {
+                MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            int index = audioFiles.IndexOf(fileName);
+
+            if (index == -1) return;
+
+            selectedIndex = index;
+            currentPlayingFile = fileName;
+
+            mainPanel.Tag = fileName;
+            stopAudio();
+            playAudio(fileName);
             bPlayback.BackgroundImage = Properties.Resources.pause;
             isPaused = false;
             isStopped = false;
@@ -500,7 +535,15 @@ namespace ReFrameAudio
 
                         if (alias == selectedFolder)
                         {
-                            string[] extensions = new[] { "*.wav", "*.mp3", "*.ogg", "*.flac", "*.mp4", "*.mkv", "*.mov" };
+                            string[] extensions = new[]
+                            { "*.wav",
+                              "*.mp3",
+                              "*.ogg", 
+                              "*.flac", 
+                              "*.mp4", 
+                              "*.mkv", 
+                              "*.mov" };
+
                             var audioFiles = extensions
                                 .SelectMany(ext => Directory.GetFiles(path, ext, SearchOption.TopDirectoryOnly))
                                 .Where(file => isValidAudio(file))
@@ -1000,6 +1043,8 @@ namespace ReFrameAudio
 
                 populateDropdowns();
                 MessageBox.Show("Folder " + barFolder + " successfully added to the database!", Text, MessageBoxButtons.OK);
+
+                browseFolders.Select();
             }
             else
             {
@@ -1196,20 +1241,7 @@ namespace ReFrameAudio
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFile = ofd.FileName;
-                    if (string.IsNullOrEmpty(selectedFile))
-                    {
-                        return;
-                    }
-                    if (!File.Exists(selectedFile))
-                    {
-                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                    mainPanel.Tag = selectedFile;
-                    stopAudio();
-                    playAudio(selectedFile);
-                    bPlayback.BackgroundImage = Properties.Resources.pause;
-                    isPaused = false;
+                    playSelection(selectedFile);
                 }
             }
             else
@@ -1224,20 +1256,7 @@ namespace ReFrameAudio
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFile = ofd.FileName;
-                    if (string.IsNullOrEmpty(selectedFile))
-                    {
-                        return;
-                    }
-                    if (!File.Exists(selectedFile))
-                    {
-                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                    mainPanel.Tag = selectedFile;
-                    stopAudio();
-                    playAudio(selectedFile);
-                    bPlayback.BackgroundImage = Properties.Resources.pause;
-                    isPaused = false;
+                    playSelection(selectedFile);
                 }
             }
         }
@@ -1367,6 +1386,44 @@ namespace ReFrameAudio
                 bRemoveFolder.PerformClick();
                 e.Handled = true;
                 e.SuppressKeyPress = true;
+            }
+        }
+
+        private void panelBrowser_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data == null) return;
+
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void panelBrowser_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data == null) return;
+
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files != null && files.Length > 0)
+            {
+                string fileName = files[0];
+                bool fileNameExists = File.Exists(fileName);
+                if (fileNameExists)
+                {
+                    playSelection(fileName);
+
+                    // ?
+                    if (Properties.Settings.Default.switchPage)
+                    {
+                        mainPanel.BringToFront();
+                        isBrowserOpen = false;
+                        isSettingsOpen = false;
+                    }
+                }
             }
         }
     }

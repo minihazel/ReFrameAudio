@@ -291,12 +291,15 @@
             // 
             // panelBrowser
             // 
+            panelBrowser.AllowDrop = true;
             panelBrowser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panelBrowser.AutoScroll = true;
             panelBrowser.Location = new Point(1, 5);
             panelBrowser.Name = "panelBrowser";
             panelBrowser.Size = new Size(490, 320);
             panelBrowser.TabIndex = 7;
+            panelBrowser.DragDrop += panelBrowser_DragDrop;
+            panelBrowser.DragEnter += panelBrowser_DragEnter;
             // 
             // browseFolders
             // 
