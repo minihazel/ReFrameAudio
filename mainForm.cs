@@ -105,7 +105,6 @@ namespace ReFrameAudio
             }
 
             string parentDirectory = Path.GetDirectoryName(filePath);
-            MessageBox.Show(parentDirectory);
             if (string.IsNullOrEmpty(parentDirectory))
             {
                 parentDirectory = string.Empty;
