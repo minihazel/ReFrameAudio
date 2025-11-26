@@ -1368,5 +1368,6 @@ namespace ReFrameAudio
                 e.Handled = true;
                 e.SuppressKeyPress = true;
             }
+        }
     }
 }
