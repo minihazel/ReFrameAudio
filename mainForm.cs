@@ -211,10 +211,12 @@ namespace ReFrameAudio
                     handleOpenedFile(filePath);
                 }));
 
+                /*
                 if (this.WindowState == FormWindowState.Minimized)
                 {
                     this.WindowState = FormWindowState.Normal;
                 }
+                */
 
                 this.BringToFront();
             }
