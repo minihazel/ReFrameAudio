@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing.Printing;
 using System.Drawing.Text;
 using System.IO;
+using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using System.Timers;
@@ -19,6 +20,7 @@ namespace ReFrameAudio
 {
     public partial class mainForm : Form
     {
+        private const string pipeName = "ReFrameAudioPipe";
         public string audioBaseConfig =
             "{" +
             "   \"folders\": []" +
@@ -32,6 +34,7 @@ namespace ReFrameAudio
         private bool isDragging = false;
         private bool shouldSwitchOnPlay = false;
         private bool hasJustOpened = true;
+        private bool isOpeningViaDefault = false;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -86,6 +89,22 @@ namespace ReFrameAudio
             this.MouseWheel += mainPanel_MouseWheel;
         }
 
+        public mainForm(string filePath) : this() // Calls the default constructor first
+        {
+            // Your logic to process the opened file goes here
+            isOpeningViaDefault = true;
+            currentPlayingFile = filePath;
+        }
+
+        private void handleOpenedFile(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                string selectedFile = filePath;
+                playSelection(selectedFile, true);
+            }
+        }
+
         private void populateDropdowns()
         {
             availableFolders.Items.Clear();
@@ -120,8 +139,58 @@ namespace ReFrameAudio
             }
         }
 
+        private void runPipeServer()
+        {
+            while (true)
+            {
+                try
+                {
+                    using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In))
+                    {
+                        server.WaitForConnection();
+
+                        using (var reader = new StreamReader(server))
+                        {
+                            string? filePath = reader.ReadLine();
+
+                            if (!string.IsNullOrEmpty(filePath))
+                            {
+                                // We received a file path, now invoke the UI thread to handle it.
+                                this.BeginInvoke(new Action(() => initRemote(filePath)));
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle pipe failure/cancellation. The loop will restart the server.
+                }
+            }
+        }
+
+        private void initRemote(string filePath)
+        {
+            bool fileExists = File.Exists(filePath);
+            if (fileExists)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    handleOpenedFile(filePath);
+                }));
+
+                if (this.WindowState == FormWindowState.Minimized)
+                {
+                    this.WindowState = FormWindowState.Normal;
+                }
+
+                this.BringToFront();
+            }
+        }
+
         private void mainForm_Load(object sender, EventArgs e)
         {
+            Task.Run(() => runPipeServer());
+
             panelBrowser.GetType()
                 .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 ?.SetValue(panelBrowser, true, null);
@@ -200,6 +269,21 @@ namespace ReFrameAudio
             panelBrowser.MouseLeave += panelBrowser_MouseLeave;
             panelBrowser.MouseClick += panelBrowser_MouseClick;
             panelBrowser.MouseDoubleClick += panelBrowser_MouseDoubleClick;
+
+            if (isOpeningViaDefault)
+            {
+                isOpeningViaDefault = false;
+
+                /*
+                if (string.IsNullOrEmpty(currentPlayingFile)) return;
+                string selectedFileName = currentPlayingFile;
+
+                this.BeginInvoke(new Action(() =>
+                {
+                    handleOpenedFile(selectedFileName);
+                }));
+                */
+            }
         }
 
         private void customizeItem(int height, float fontSize)
@@ -352,7 +436,7 @@ namespace ReFrameAudio
             panelBrowser.Invalidate();
         }
 
-        private void playSelection(string fileName)
+        private void playSelection(string fileName, bool quickStart)
         {
             if (string.IsNullOrEmpty(fileName))
             {
@@ -364,13 +448,26 @@ namespace ReFrameAudio
                 return;
             }
 
+            if (quickStart)
+            {
+                currentPlayingFile = fileName;
+                mainPanel.Tag = fileName;
+                stopAudio();
+                playAudio(fileName);
+                bPlayback.BackgroundImage = Properties.Resources.pause;
+                isPaused = false;
+                isStopped = false;
+                panelBrowser.Invalidate();
+                return;
+            }
+
             int index = audioFiles.IndexOf(fileName);
 
             if (index == -1) return;
 
             selectedIndex = index;
-            currentPlayingFile = fileName;
 
+            currentPlayingFile = fileName;
             mainPanel.Tag = fileName;
             stopAudio();
             playAudio(fileName);
@@ -1248,7 +1345,7 @@ namespace ReFrameAudio
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFile = ofd.FileName;
-                    playSelection(selectedFile);
+                    playSelection(selectedFile, false);
                 }
             }
             else
@@ -1263,7 +1360,7 @@ namespace ReFrameAudio
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     string selectedFile = ofd.FileName;
-                    playSelection(selectedFile);
+                    playSelection(selectedFile, false);
                 }
             }
         }
@@ -1421,7 +1518,7 @@ namespace ReFrameAudio
                 bool fileNameExists = File.Exists(fileName);
                 if (fileNameExists)
                 {
-                    playSelection(fileName);
+                    playSelection(fileName, false);
 
                     // ?
                     if (Properties.Settings.Default.switchPage)
