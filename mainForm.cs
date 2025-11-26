@@ -31,6 +31,7 @@ namespace ReFrameAudio
         private bool isSettingsOpen = false;
         private bool isDragging = false;
         private bool shouldSwitchOnPlay = false;
+        private bool hasJustOpened = true;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -550,6 +551,11 @@ namespace ReFrameAudio
                                 .OrderByDescending(file => File.GetLastWriteTime(file))
                                 .ToArray();
 
+                            if (hasJustOpened)
+                            {
+                                browserPanel.BringToFront();
+                                isBrowserOpen = true;
+                            }
                             await listAudioFiles(audioFiles);
                             break;
                         }
@@ -1202,6 +1208,7 @@ namespace ReFrameAudio
         private async void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
         {
             await browseAudioFiles();
+            hasJustOpened = false;
         }
 
         private void panelBrowser_SizeChanged(object sender, EventArgs e)
