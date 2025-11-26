@@ -680,10 +680,10 @@ namespace ReFrameAudio
                             string[] extensions = new[] {
                                 "*.wav",
                                 "*.mp3",
-                                "*.ogg", 
-                                "*.flac", 
-                                "*.mp4", 
-                                "*.mkv", 
+                                "*.ogg",
+                                "*.flac",
+                                "*.mp4",
+                                "*.mkv",
                                 "*.mov"
                             };
 
@@ -1384,7 +1384,7 @@ namespace ReFrameAudio
         private async void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
         {
             await browseAudioFiles();
-            
+
             hasJustOpened = false;
         }
 
@@ -1608,6 +1608,17 @@ namespace ReFrameAudio
                         isSettingsOpen = false;
                     }
                 }
+            }
+        }
+
+        private void bFactoryReset_Click(object sender, EventArgs e)
+        {
+            string content = "Are you sure you wish to factory reset ReFrame? This action is irreversible.";
+            if (MessageBox.Show(content, Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                Properties.Settings.Default.Reset();
+                Properties.Settings.Default.Save();
+                Application.Restart();
             }
         }
     }

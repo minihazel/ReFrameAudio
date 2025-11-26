@@ -50,6 +50,7 @@
             bSettings = new Button();
             settingsPanel = new Panel();
             settingsContent = new Panel();
+            bFactoryReset = new Button();
             panel1 = new Panel();
             barAddress = new TextBox();
             panel2 = new Panel();
@@ -369,6 +370,7 @@
             // settingsContent
             // 
             settingsContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            settingsContent.Controls.Add(bFactoryReset);
             settingsContent.Controls.Add(panel1);
             settingsContent.Controls.Add(panel2);
             settingsContent.Controls.Add(lblAddress);
@@ -380,6 +382,19 @@
             settingsContent.Size = new Size(469, 225);
             settingsContent.TabIndex = 10;
             settingsContent.Visible = false;
+            // 
+            // bFactoryReset
+            // 
+            bFactoryReset.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            bFactoryReset.Cursor = Cursors.Hand;
+            bFactoryReset.ForeColor = Color.IndianRed;
+            bFactoryReset.Location = new Point(137, 169);
+            bFactoryReset.Name = "bFactoryReset";
+            bFactoryReset.Size = new Size(132, 38);
+            bFactoryReset.TabIndex = 10;
+            bFactoryReset.Text = "☢️ Factory reset";
+            bFactoryReset.UseVisualStyleBackColor = true;
+            bFactoryReset.Click += bFactoryReset_Click;
             // 
             // panel1
             // 
@@ -526,9 +541,9 @@
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
+            Controls.Add(settingsPanel);
             Controls.Add(mainPanel);
             Controls.Add(browserPanel);
-            Controls.Add(settingsPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -589,5 +604,6 @@
         private Panel panelBrowser;
         private ToolTip videoToolTip;
         private Button bSwitchPageOnPlay;
+        private Button bFactoryReset;
     }
 }
