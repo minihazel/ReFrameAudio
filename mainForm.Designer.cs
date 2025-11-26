@@ -534,7 +534,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
-            MinimumSize = new Size(509, 142);
+            MinimumSize = new Size(309, 142);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";

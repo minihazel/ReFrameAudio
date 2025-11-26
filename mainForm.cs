@@ -11,6 +11,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Header;
@@ -96,13 +97,45 @@ namespace ReFrameAudio
             currentPlayingFile = filePath;
         }
 
-        private void handleOpenedFile(string filePath)
+        private async Task handleOpenedFile(string filePath)
         {
-            if (File.Exists(filePath))
+            if (!File.Exists(filePath))
             {
-                string selectedFile = filePath;
-                playSelection(selectedFile, true);
+                return;
             }
+
+            string parentDirectory = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrEmpty(parentDirectory))
+            {
+                parentDirectory = string.Empty;
+            }
+
+            string[] extensions = new[]
+            {
+                "*.wav",
+                "*.mp3",
+                "*.ogg",
+                "*.flac",
+                "*.mp4",
+                "*.mkv",
+                "*.mov"
+            };
+
+
+            if (!string.IsNullOrEmpty(parentDirectory))
+            {
+                audioFiles.Clear();
+                var foundFiles = extensions
+                    .SelectMany(ext => Directory.GetFiles(parentDirectory, ext, SearchOption.TopDirectoryOnly))
+                    .Where(file => isValidAudio(file))
+                    .OrderByDescending(file => File.GetLastWriteTime(file))
+                    .ToArray();
+
+                await listAudioFiles(foundFiles);
+            }
+
+            string selectedFile = filePath;
+            playSelection(selectedFile, true);
         }
 
         private void populateDropdowns()
@@ -189,7 +222,19 @@ namespace ReFrameAudio
 
         private void mainForm_Load(object sender, EventArgs e)
         {
-            Task.Run(() => runPipeServer());
+            if (isOpeningViaDefault && !string.IsNullOrEmpty(currentPlayingFile))
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    handleOpenedFile(currentPlayingFile);
+                    Task.Run(() => runPipeServer());
+                    isOpeningViaDefault = false;
+                }));
+            }
+            else
+            {
+                Task.Run(() => runPipeServer());
+            }
 
             panelBrowser.GetType()
                 .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
@@ -269,21 +314,6 @@ namespace ReFrameAudio
             panelBrowser.MouseLeave += panelBrowser_MouseLeave;
             panelBrowser.MouseClick += panelBrowser_MouseClick;
             panelBrowser.MouseDoubleClick += panelBrowser_MouseDoubleClick;
-
-            if (isOpeningViaDefault)
-            {
-                isOpeningViaDefault = false;
-
-                /*
-                if (string.IsNullOrEmpty(currentPlayingFile)) return;
-                string selectedFileName = currentPlayingFile;
-
-                this.BeginInvoke(new Action(() =>
-                {
-                    handleOpenedFile(selectedFileName);
-                }));
-                */
-            }
         }
 
         private void customizeItem(int height, float fontSize)
@@ -347,15 +377,29 @@ namespace ReFrameAudio
                 using (Brush textBrush = new SolidBrush(foreColor))
                 using (Font font = new Font("Bahnschrift Light", itemFontSize, FontStyle.Regular))
                 {
+                    RectangleF textBounds = new RectangleF(
+                        itemRect.X + 26,
+                        itemRect.Y + 2,
+                        itemRect.Width - 36, // IMPORTANT: Ensure width is correct for truncation
+                        itemRect.Height
+                    );
+
                     StringFormat sf = new StringFormat
                     {
                         LineAlignment = StringAlignment.Center,
-                        Trimming = StringTrimming.None,
+                        Trimming = StringTrimming.EllipsisCharacter,
                         FormatFlags = StringFormatFlags.NoWrap
                     };
 
-                    e.Graphics.DrawString(Path.GetFileName(audioFiles[i]), font, textBrush,
-                                            new RectangleF(itemRect.X + 26, itemRect.Y + 2, itemRect.Width - 10, itemRect.Height), sf);
+                    // RectangleF(itemRect.X + 26, itemRect.Y + 2, itemRect.Width - 10, itemRect.Height)
+
+                    e.Graphics.DrawString(
+                        Path.GetFileName(audioFiles[i]),
+                        font,
+                        textBrush,
+                        textBounds,
+                        sf
+                    );
                 }
             }
         }
@@ -633,14 +677,15 @@ namespace ReFrameAudio
 
                         if (alias == selectedFolder)
                         {
-                            string[] extensions = new[]
-                            { "*.wav",
-                              "*.mp3",
-                              "*.ogg", 
-                              "*.flac", 
-                              "*.mp4", 
-                              "*.mkv", 
-                              "*.mov" };
+                            string[] extensions = new[] {
+                                "*.wav",
+                                "*.mp3",
+                                "*.ogg", 
+                                "*.flac", 
+                                "*.mp4", 
+                                "*.mkv", 
+                                "*.mov"
+                            };
 
                             var audioFiles = extensions
                                 .SelectMany(ext => Directory.GetFiles(path, ext, SearchOption.TopDirectoryOnly))
@@ -648,11 +693,9 @@ namespace ReFrameAudio
                                 .OrderByDescending(file => File.GetLastWriteTime(file))
                                 .ToArray();
 
-                            if (hasJustOpened)
-                            {
-                                browserPanel.BringToFront();
-                                isBrowserOpen = true;
-                            }
+                            browserPanel.BringToFront();
+                            isBrowserOpen = true;
+
                             await listAudioFiles(audioFiles);
                             break;
                         }
@@ -712,7 +755,18 @@ namespace ReFrameAudio
         private bool isValidAudio(string filePath)
         {
             string extension = Path.GetExtension(filePath).ToLower();
-            return extension == ".mp3" || extension == ".wav";
+            HashSet<string> validExtensions = new HashSet<string>
+                {
+                    ".wav",
+                    ".mp3",
+                    ".ogg",
+                    ".flac",
+                    ".mp4",
+                    ".mkv",
+                    ".mov"
+                };
+
+            return validExtensions.Contains(extension);
         }
 
         private void stopAudio()
@@ -873,8 +927,33 @@ namespace ReFrameAudio
             }
             else
             {
+                for (int i = 0; i < audioFiles.Count; i++)
+                {
+                    string file = audioFiles[i];
+                    string filename = Path.GetFileName(file);
+
+                    if (currentFile == file)
+                    {
+                        int index = i + 1;
+                        if (File.Exists(filename))
+                        {
+                            playViaTrack(index);
+
+                            if (Properties.Settings.Default.switchPage)
+                            {
+                                mainPanel.BringToFront();
+                                isBrowserOpen = false;
+                                isSettingsOpen = false;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                /*
                 bPlayback.BackgroundImage = Properties.Resources.paused_play;
                 isStopped = true;
+                */
             }
         }
 
@@ -1305,6 +1384,7 @@ namespace ReFrameAudio
         private async void browseFolders_SelectedIndexChanged(object sender, EventArgs e)
         {
             await browseAudioFiles();
+            
             hasJustOpened = false;
         }
 
