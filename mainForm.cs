@@ -105,6 +105,7 @@ namespace ReFrameAudio
             }
 
             string parentDirectory = Path.GetDirectoryName(filePath);
+            MessageBox.Show(parentDirectory);
             if (string.IsNullOrEmpty(parentDirectory))
             {
                 parentDirectory = string.Empty;
@@ -937,7 +938,7 @@ namespace ReFrameAudio
                     if (currentFile == file)
                     {
                         int index = i + 1;
-                        if (File.Exists(filename))
+                        if (File.Exists(file))
                         {
                             playViaTrack(index);
 
