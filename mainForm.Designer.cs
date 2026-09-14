@@ -49,6 +49,8 @@
             bDrawer = new Button();
             bSettings = new Button();
             settingsPanel = new Panel();
+            label1 = new Label();
+            chkUseLastTimestamp = new CheckBox();
             chkAutoloadFolder = new CheckBox();
             chkPlayLastUsedTrack = new CheckBox();
             lblAvailableFolders = new Label();
@@ -89,7 +91,7 @@
             controlPanel.Controls.Add(endTime);
             controlPanel.Controls.Add(currentTime);
             controlPanel.Controls.Add(timestamp);
-            controlPanel.Location = new Point(0, 443);
+            controlPanel.Location = new Point(0, 474);
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
@@ -260,7 +262,7 @@
             mainPanel.ForeColor = Color.DarkGray;
             mainPanel.Location = new Point(1, 30);
             mainPanel.Name = "mainPanel";
-            mainPanel.Size = new Size(491, 411);
+            mainPanel.Size = new Size(491, 442);
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
@@ -274,7 +276,7 @@
             notice.AutoSize = true;
             notice.Font = new Font("Bahnschrift SemiLight", 9F);
             notice.ForeColor = Color.Gray;
-            notice.Location = new Point(56, 198);
+            notice.Location = new Point(56, 214);
             notice.Name = "notice";
             notice.Size = new Size(378, 14);
             notice.TabIndex = 0;
@@ -291,7 +293,7 @@
             browserPanel.ForeColor = Color.DarkGray;
             browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
-            browserPanel.Size = new Size(492, 411);
+            browserPanel.Size = new Size(492, 442);
             browserPanel.TabIndex = 2;
             // 
             // panelBrowser
@@ -301,7 +303,7 @@
             panelBrowser.AutoScroll = true;
             panelBrowser.Location = new Point(1, 5);
             panelBrowser.Name = "panelBrowser";
-            panelBrowser.Size = new Size(490, 402);
+            panelBrowser.Size = new Size(490, 433);
             panelBrowser.TabIndex = 7;
             panelBrowser.DragDrop += panelBrowser_DragDrop;
             panelBrowser.DragEnter += panelBrowser_DragEnter;
@@ -361,6 +363,8 @@
             settingsPanel.AllowDrop = true;
             settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             settingsPanel.BackColor = Color.FromArgb(28, 30, 32);
+            settingsPanel.Controls.Add(label1);
+            settingsPanel.Controls.Add(chkUseLastTimestamp);
             settingsPanel.Controls.Add(chkAutoloadFolder);
             settingsPanel.Controls.Add(chkPlayLastUsedTrack);
             settingsPanel.Controls.Add(lblAvailableFolders);
@@ -370,13 +374,35 @@
             settingsPanel.ForeColor = Color.DarkGray;
             settingsPanel.Location = new Point(1, 30);
             settingsPanel.Name = "settingsPanel";
-            settingsPanel.Size = new Size(491, 411);
+            settingsPanel.Size = new Size(491, 442);
             settingsPanel.TabIndex = 5;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new Font("Bahnschrift SemiLight", 12F);
+            label1.ForeColor = Color.FromArgb(64, 64, 64);
+            label1.Location = new Point(29, 118);
+            label1.Name = "label1";
+            label1.Size = new Size(23, 19);
+            label1.TabIndex = 14;
+            label1.Text = "└─";
+            // 
+            // chkUseLastTimestamp
+            // 
+            chkUseLastTimestamp.AutoSize = true;
+            chkUseLastTimestamp.Location = new Point(58, 120);
+            chkUseLastTimestamp.Name = "chkUseLastTimestamp";
+            chkUseLastTimestamp.Size = new Size(196, 21);
+            chkUseLastTimestamp.TabIndex = 13;
+            chkUseLastTimestamp.Text = "Resume where you left off";
+            chkUseLastTimestamp.UseVisualStyleBackColor = true;
+            chkUseLastTimestamp.CheckedChanged += chkUseLastTimestamp_CheckedChanged;
             // 
             // chkAutoloadFolder
             // 
             chkAutoloadFolder.AutoSize = true;
-            chkAutoloadFolder.Location = new Point(29, 117);
+            chkAutoloadFolder.Location = new Point(29, 151);
             chkAutoloadFolder.Name = "chkAutoloadFolder";
             chkAutoloadFolder.Size = new Size(190, 21);
             chkAutoloadFolder.TabIndex = 12;
@@ -422,7 +448,7 @@
             // 
             // settingsContent
             // 
-            settingsContent.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            settingsContent.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             settingsContent.Controls.Add(bFactoryReset);
             settingsContent.Controls.Add(panel1);
             settingsContent.Controls.Add(panel2);
@@ -430,9 +456,9 @@
             settingsContent.Controls.Add(lblFolderName);
             settingsContent.Controls.Add(bBrowseFolder);
             settingsContent.Controls.Add(bRemoveFolder);
-            settingsContent.Location = new Point(11, 156);
+            settingsContent.Location = new Point(11, 188);
             settingsContent.Name = "settingsContent";
-            settingsContent.Size = new Size(469, 228);
+            settingsContent.Size = new Size(469, 224);
             settingsContent.TabIndex = 10;
             settingsContent.Visible = false;
             // 
@@ -564,7 +590,7 @@
             AutoScaleDimensions = new SizeF(8F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlLight;
-            ClientSize = new Size(493, 514);
+            ClientSize = new Size(493, 545);
             Controls.Add(bSettings);
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
@@ -637,5 +663,7 @@
         private Button bFactoryReset;
         private CheckBox chkPlayLastUsedTrack;
         private CheckBox chkAutoloadFolder;
+        private Label label1;
+        private CheckBox chkUseLastTimestamp;
     }
 }

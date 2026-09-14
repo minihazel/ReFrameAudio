@@ -178,5 +178,29 @@ namespace ReFrameAudio.Properties {
                 this["autoloadFolder"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public long lastPlayback {
+            get {
+                return ((long)(this["lastPlayback"]));
+            }
+            set {
+                this["lastPlayback"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool resumeTrackTimestamp {
+            get {
+                return ((bool)(this["resumeTrackTimestamp"]));
+            }
+            set {
+                this["resumeTrackTimestamp"] = value;
+            }
+        }
     }
 }

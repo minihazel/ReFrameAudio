@@ -40,6 +40,7 @@ namespace ReFrameAudio
         private bool isTrimmerEnabled = false;
         private bool playLastUsed = false;
         private bool autoLoadFolder = false;
+        private bool resumeTrack = false;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -227,7 +228,7 @@ namespace ReFrameAudio
 
         private async void mainForm_Shown(object sender, EventArgs e)
         {
-            
+
         }
 
         private void mainForm_Load(object sender, EventArgs e)
@@ -295,6 +296,12 @@ namespace ReFrameAudio
             else
             {
                 bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            }
+
+            if (Properties.Settings.Default.resumeTrackTimestamp)
+            {
+                resumeTrack = true;
+                chkUseLastTimestamp.Checked = true;
             }
 
             autoLoadFolder = Properties.Settings.Default.autoloadFolder;
@@ -860,6 +867,9 @@ namespace ReFrameAudio
 
         private void playAudio(string filePath)
         {
+            string? lastSavedTrack = Properties.Settings.Default.currentFilePath;
+            long savedMs = Properties.Settings.Default.lastPlayback;
+
             Properties.Settings.Default.currentFileName = Path.GetFileName(filePath);
             Properties.Settings.Default.currentFilePath = filePath;
             Properties.Settings.Default.Save();
@@ -873,18 +883,28 @@ namespace ReFrameAudio
 
             timestamp.Maximum = (int)audioFileReader.TotalTime.TotalMilliseconds;
             timestamp.TickFrequency = timestamp.Maximum / 100;
-            timestamp.Value = 0;
+
+            if (resumeTrack && filePath == lastSavedTrack && savedMs > 0 && savedMs < timestamp.Maximum)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(savedMs);
+                timestamp.Value = (int)savedMs;
+            }
+            else if (isTrimmerEnabled && trimStart.HasValue && trimEnd.HasValue)
+            {
+                audioFileReader.CurrentTime = trimStart.Value;
+                timestamp.Value = (int)trimStart.Value.TotalMilliseconds;
+            }
+            else
+            {
+                audioFileReader.CurrentTime = TimeSpan.Zero;
+                timestamp.Value = 0;
+            }
 
             endTime.Text = audioFileReader.TotalTime.ToString(@"mm\:ss");
 
             playbackTimer = new Timer();
             playbackTimer.Interval = 30;
             playbackTimer.Elapsed += PlaybackTimer_Elapsed;
-
-            if (isTrimmerEnabled && trimStart.HasValue)
-            {
-                audioFileReader.CurrentTime = trimStart.Value;
-            }
 
             playbackTimer.Start();
             waveOut.Play();
@@ -992,6 +1012,7 @@ namespace ReFrameAudio
         private void WaveOut_PlaybackStopped(object sender, StoppedEventArgs args)
         {
             string? currentFile = mainPanel.Tag?.ToString();
+            Properties.Settings.Default.lastPlayback = 0;
 
             if (Properties.Settings.Default.audioRepeat)
             {
@@ -1049,11 +1070,18 @@ namespace ReFrameAudio
             Properties.Settings.Default.appSizeWidth = this.Width;
             Properties.Settings.Default.appSizeHeight = this.Height;
 
+            if (audioFileReader != null)
+            {
+                Properties.Settings.Default.lastPlayback = (long)audioFileReader.CurrentTime.TotalMilliseconds;
+                Properties.Settings.Default.resumeTrackTimestamp = chkUseLastTimestamp.Checked;
+                Properties.Settings.Default.Save();
+            }
+
             string? currentFile = mainPanel.Tag?.ToString();
             if (string.IsNullOrEmpty(currentFile)) return;
             Properties.Settings.Default.lastFile = currentFile;
-            Properties.Settings.Default.Save();
 
+            Properties.Settings.Default.Save();
             stopAudio();
         }
 
@@ -1588,6 +1616,25 @@ namespace ReFrameAudio
 
         private void updateTimestamp(int mouseX)
         {
+            int margin = 12;
+            int usableWidth = timestamp.Width - (margin * 2);
+            if (usableWidth <= 0) return;
+
+            int relativeX = mouseX - margin;
+            float percent = (float)relativeX / usableWidth;
+            percent = Math.Max(0f, Math.Min(1f, percent));
+            int newValue = timestamp.Minimum + (int)((timestamp.Maximum - timestamp.Minimum) * percent);
+
+            timestamp.Value = newValue;
+
+            if (audioFileReader != null)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
+            }
+
+
+
+            /*
             float percent = (float)mouseX / timestamp.Width;
             int newValue = timestamp.Minimum + (int)((timestamp.Maximum - timestamp.Minimum) * percent);
             newValue = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
@@ -1597,6 +1644,7 @@ namespace ReFrameAudio
             {
                 audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
             }
+            */
         }
 
         private void timestamp_MouseMove(object sender, MouseEventArgs e)
@@ -1751,6 +1799,20 @@ namespace ReFrameAudio
             else
             {
                 Properties.Settings.Default.autoloadFolder = true;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        private void chkUseLastTimestamp_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!chkUseLastTimestamp.Checked)
+            {
+                Properties.Settings.Default.resumeTrackTimestamp = false;
+                Properties.Settings.Default.Save();
+            }
+            else
+            {
+                Properties.Settings.Default.resumeTrackTimestamp = true;
                 Properties.Settings.Default.Save();
             }
         }
