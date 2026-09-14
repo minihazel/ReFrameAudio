@@ -49,6 +49,10 @@
             bDrawer = new Button();
             bSettings = new Button();
             settingsPanel = new Panel();
+            chkAutoloadFolder = new CheckBox();
+            chkPlayLastUsedTrack = new CheckBox();
+            lblAvailableFolders = new Label();
+            availableFolders = new ComboBox();
             settingsContent = new Panel();
             bFactoryReset = new Button();
             panel1 = new Panel();
@@ -59,8 +63,6 @@
             lblFolderName = new Label();
             bBrowseFolder = new Button();
             bRemoveFolder = new Button();
-            lblAvailableFolders = new Label();
-            availableFolders = new ComboBox();
             videoToolTip = new ToolTip(components);
             controlPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
@@ -87,13 +89,14 @@
             controlPanel.Controls.Add(endTime);
             controlPanel.Controls.Add(currentTime);
             controlPanel.Controls.Add(timestamp);
-            controlPanel.Location = new Point(0, 361);
+            controlPanel.Location = new Point(0, 443);
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
             // 
             // bSwitchPageOnPlay
             // 
+            bSwitchPageOnPlay.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             bSwitchPageOnPlay.BackColor = SystemColors.ControlLight;
             bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
             bSwitchPageOnPlay.BackgroundImageLayout = ImageLayout.Zoom;
@@ -108,6 +111,7 @@
             bSwitchPageOnPlay.Name = "bSwitchPageOnPlay";
             bSwitchPageOnPlay.Size = new Size(20, 20);
             bSwitchPageOnPlay.TabIndex = 10;
+            bSwitchPageOnPlay.Tag = "";
             bSwitchPageOnPlay.UseVisualStyleBackColor = false;
             bSwitchPageOnPlay.Click += bSwitchPageOnPlay_Click;
             // 
@@ -157,7 +161,7 @@
             volumeStatus.Name = "volumeStatus";
             volumeStatus.Size = new Size(35, 18);
             volumeStatus.TabIndex = 7;
-            volumeStatus.Text = "XX%";
+            volumeStatus.Text = "00%";
             volumeStatus.TextAlign = ContentAlignment.BottomCenter;
             // 
             // bMute
@@ -256,7 +260,7 @@
             mainPanel.ForeColor = Color.DarkGray;
             mainPanel.Location = new Point(1, 30);
             mainPanel.Name = "mainPanel";
-            mainPanel.Size = new Size(491, 329);
+            mainPanel.Size = new Size(491, 411);
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
@@ -270,7 +274,7 @@
             notice.AutoSize = true;
             notice.Font = new Font("Bahnschrift SemiLight", 9F);
             notice.ForeColor = Color.Gray;
-            notice.Location = new Point(56, 157);
+            notice.Location = new Point(56, 198);
             notice.Name = "notice";
             notice.Size = new Size(378, 14);
             notice.TabIndex = 0;
@@ -287,7 +291,7 @@
             browserPanel.ForeColor = Color.DarkGray;
             browserPanel.Location = new Point(1, 30);
             browserPanel.Name = "browserPanel";
-            browserPanel.Size = new Size(492, 329);
+            browserPanel.Size = new Size(492, 411);
             browserPanel.TabIndex = 2;
             // 
             // panelBrowser
@@ -297,7 +301,7 @@
             panelBrowser.AutoScroll = true;
             panelBrowser.Location = new Point(1, 5);
             panelBrowser.Name = "panelBrowser";
-            panelBrowser.Size = new Size(490, 320);
+            panelBrowser.Size = new Size(490, 402);
             panelBrowser.TabIndex = 7;
             panelBrowser.DragDrop += panelBrowser_DragDrop;
             panelBrowser.DragEnter += panelBrowser_DragEnter;
@@ -357,15 +361,64 @@
             settingsPanel.AllowDrop = true;
             settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             settingsPanel.BackColor = Color.FromArgb(28, 30, 32);
-            settingsPanel.Controls.Add(settingsContent);
+            settingsPanel.Controls.Add(chkAutoloadFolder);
+            settingsPanel.Controls.Add(chkPlayLastUsedTrack);
             settingsPanel.Controls.Add(lblAvailableFolders);
             settingsPanel.Controls.Add(availableFolders);
+            settingsPanel.Controls.Add(settingsContent);
             settingsPanel.Font = new Font("Bahnschrift SemiLight", 10F);
             settingsPanel.ForeColor = Color.DarkGray;
             settingsPanel.Location = new Point(1, 30);
             settingsPanel.Name = "settingsPanel";
-            settingsPanel.Size = new Size(491, 329);
+            settingsPanel.Size = new Size(491, 411);
             settingsPanel.TabIndex = 5;
+            // 
+            // chkAutoloadFolder
+            // 
+            chkAutoloadFolder.AutoSize = true;
+            chkAutoloadFolder.Location = new Point(29, 117);
+            chkAutoloadFolder.Name = "chkAutoloadFolder";
+            chkAutoloadFolder.Size = new Size(190, 21);
+            chkAutoloadFolder.TabIndex = 12;
+            chkAutoloadFolder.Text = "Auto-load topmost folder";
+            chkAutoloadFolder.UseVisualStyleBackColor = true;
+            chkAutoloadFolder.CheckedChanged += chkAutoloadFolder_CheckedChanged;
+            // 
+            // chkPlayLastUsedTrack
+            // 
+            chkPlayLastUsedTrack.AutoSize = true;
+            chkPlayLastUsedTrack.Location = new Point(29, 90);
+            chkPlayLastUsedTrack.Name = "chkPlayLastUsedTrack";
+            chkPlayLastUsedTrack.Size = new Size(206, 21);
+            chkPlayLastUsedTrack.TabIndex = 11;
+            chkPlayLastUsedTrack.Text = "Play last used track on start";
+            chkPlayLastUsedTrack.UseVisualStyleBackColor = true;
+            chkPlayLastUsedTrack.CheckedChanged += chkPlayLastUsedTrack_CheckedChanged;
+            // 
+            // lblAvailableFolders
+            // 
+            lblAvailableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblAvailableFolders.Font = new Font("Bahnschrift SemiLight", 9F);
+            lblAvailableFolders.Location = new Point(3, 5);
+            lblAvailableFolders.Name = "lblAvailableFolders";
+            lblAvailableFolders.Size = new Size(485, 38);
+            lblAvailableFolders.TabIndex = 1;
+            lblAvailableFolders.Text = "🗂 Available folders";
+            lblAvailableFolders.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // availableFolders
+            // 
+            availableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            availableFolders.Cursor = Cursors.Hand;
+            availableFolders.DropDownStyle = ComboBoxStyle.DropDownList;
+            availableFolders.Font = new Font("Bahnschrift SemiLight", 13F);
+            availableFolders.FormattingEnabled = true;
+            availableFolders.Items.AddRange(new object[] { "➕ Add new folder" });
+            availableFolders.Location = new Point(29, 46);
+            availableFolders.Name = "availableFolders";
+            availableFolders.Size = new Size(433, 29);
+            availableFolders.TabIndex = 0;
+            availableFolders.SelectedIndexChanged += availableFolders_SelectedIndexChanged;
             // 
             // settingsContent
             // 
@@ -377,9 +430,9 @@
             settingsContent.Controls.Add(lblFolderName);
             settingsContent.Controls.Add(bBrowseFolder);
             settingsContent.Controls.Add(bRemoveFolder);
-            settingsContent.Location = new Point(11, 81);
+            settingsContent.Location = new Point(11, 156);
             settingsContent.Name = "settingsContent";
-            settingsContent.Size = new Size(469, 225);
+            settingsContent.Size = new Size(469, 228);
             settingsContent.TabIndex = 10;
             settingsContent.Visible = false;
             // 
@@ -501,31 +554,6 @@
             bRemoveFolder.UseVisualStyleBackColor = true;
             bRemoveFolder.Click += bRemoveFolder_Click;
             // 
-            // lblAvailableFolders
-            // 
-            lblAvailableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblAvailableFolders.Font = new Font("Bahnschrift SemiLight", 9F);
-            lblAvailableFolders.Location = new Point(3, 5);
-            lblAvailableFolders.Name = "lblAvailableFolders";
-            lblAvailableFolders.Size = new Size(485, 38);
-            lblAvailableFolders.TabIndex = 1;
-            lblAvailableFolders.Text = "🗂 Available folders";
-            lblAvailableFolders.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // availableFolders
-            // 
-            availableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            availableFolders.Cursor = Cursors.Hand;
-            availableFolders.DropDownStyle = ComboBoxStyle.DropDownList;
-            availableFolders.Font = new Font("Bahnschrift SemiLight", 13F);
-            availableFolders.FormattingEnabled = true;
-            availableFolders.Items.AddRange(new object[] { "➕ Add new folder" });
-            availableFolders.Location = new Point(29, 46);
-            availableFolders.Name = "availableFolders";
-            availableFolders.Size = new Size(433, 29);
-            availableFolders.TabIndex = 0;
-            availableFolders.SelectedIndexChanged += availableFolders_SelectedIndexChanged;
-            // 
             // videoToolTip
             // 
             videoToolTip.ToolTipTitle = "File information";
@@ -536,7 +564,7 @@
             AutoScaleDimensions = new SizeF(8F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlLight;
-            ClientSize = new Size(493, 432);
+            ClientSize = new Size(493, 514);
             Controls.Add(bSettings);
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
@@ -555,6 +583,7 @@
             Text = "ReFrame";
             FormClosing += mainForm_FormClosing;
             Load += mainForm_Load;
+            Shown += mainForm_Shown;
             KeyDown += mainForm_KeyDown;
             controlPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)volumeSlider).EndInit();
@@ -563,6 +592,7 @@
             mainPanel.PerformLayout();
             browserPanel.ResumeLayout(false);
             settingsPanel.ResumeLayout(false);
+            settingsPanel.PerformLayout();
             settingsContent.ResumeLayout(false);
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
@@ -605,5 +635,7 @@
         private ToolTip videoToolTip;
         private Button bSwitchPageOnPlay;
         private Button bFactoryReset;
+        private CheckBox chkPlayLastUsedTrack;
+        private CheckBox chkAutoloadFolder;
     }
 }

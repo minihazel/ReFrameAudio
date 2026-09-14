@@ -33,9 +33,13 @@ namespace ReFrameAudio
         private bool isBrowserOpen = false;
         private bool isSettingsOpen = false;
         private bool isDragging = false;
-        private bool shouldSwitchOnPlay = false;
         private bool hasJustOpened = true;
         private bool isOpeningViaDefault = false;
+        private TimeSpan? trimStart = null;
+        private TimeSpan? trimEnd = null;
+        private bool isTrimmerEnabled = false;
+        private bool playLastUsed = false;
+        private bool autoLoadFolder = false;
 
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
@@ -104,7 +108,7 @@ namespace ReFrameAudio
                 return;
             }
 
-            string parentDirectory = Path.GetDirectoryName(filePath);
+            string? parentDirectory = Path.GetDirectoryName(filePath);
             if (string.IsNullOrEmpty(parentDirectory))
             {
                 parentDirectory = string.Empty;
@@ -145,7 +149,6 @@ namespace ReFrameAudio
 
             availableFolders.Items.Add("➕ Add new folder");
 
-            Debug.WriteLine(Properties.Settings.Default.audioFolders);
             JObject contentObject = JObject.Parse(Properties.Settings.Default.audioFolders);
             if (contentObject != null)
             {
@@ -222,6 +225,11 @@ namespace ReFrameAudio
             }
         }
 
+        private async void mainForm_Shown(object sender, EventArgs e)
+        {
+            
+        }
+
         private void mainForm_Load(object sender, EventArgs e)
         {
             if (isOpeningViaDefault && !string.IsNullOrEmpty(currentPlayingFile))
@@ -242,6 +250,8 @@ namespace ReFrameAudio
                 .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 ?.SetValue(panelBrowser, true, null);
 
+            // SETTINGS
+
             if (string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
                 Properties.Settings.Default.audioFolders = audioBaseConfig;
@@ -251,23 +261,6 @@ namespace ReFrameAudio
             if (Properties.Settings.Default.audioFolders != audioBaseConfig && !string.IsNullOrEmpty(Properties.Settings.Default.audioFolders))
             {
                 populateDropdowns();
-            }
-
-            if (Properties.Settings.Default.audioVolume > 0)
-            {
-                float initialVolume = Properties.Settings.Default.audioVolume;
-                int volume_rounded = (int)Math.Round(initialVolume);
-                float multipliedVolume = multiplyVolume(volume_rounded);
-                volumeStatus.Text = volume_rounded.ToString() + "%";
-                volumeSlider.Value = volume_rounded;
-            }
-            else
-            {
-                float volume = 15.0f;
-                int volume_rounded = (int)Math.Round(volume);
-                float multipliedVolume = multiplyVolume(volume);
-                volumeStatus.Text = volume.ToString() + "%";
-                volumeSlider.Value = volume_rounded;
             }
 
             if (Properties.Settings.Default.appLocationX != 0 && Properties.Settings.Default.appLocationY != 0)
@@ -292,9 +285,10 @@ namespace ReFrameAudio
             if (!string.IsNullOrEmpty(Properties.Settings.Default.lastFile))
             {
                 mainPanel.Tag = Properties.Settings.Default.lastFile;
+                currentPlayingFile = Properties.Settings.Default.lastFile;
             }
 
-            if (Properties.Settings.Default.switchPage)
+            if (Properties.Settings.Default.trimmerEnabled)
             {
                 bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
             }
@@ -303,19 +297,78 @@ namespace ReFrameAudio
                 bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
             }
 
-            shouldSwitchOnPlay = Properties.Settings.Default.switchPage;
-            notice.DragDrop += mainPanel_DragDrop;
-            notice.DragEnter += mainPanel_DragEnter;
+            autoLoadFolder = Properties.Settings.Default.autoloadFolder;
+
+            // VOLUME
+
+            if (Properties.Settings.Default.audioVolume > 0)
+            {
+                float initialVolume = Properties.Settings.Default.audioVolume;
+                int volume_rounded = (int)Math.Round(initialVolume);
+                float multipliedVolume = multiplyVolume(volume_rounded);
+                volumeStatus.Text = volume_rounded.ToString() + "%";
+                volumeSlider.Value = volume_rounded;
+            }
+            else
+            {
+                float volume = 15.0f;
+                int volume_rounded = (int)Math.Round(volume);
+                float multipliedVolume = multiplyVolume(volume);
+                volumeStatus.Text = volume.ToString() + "%";
+                volumeSlider.Value = volume_rounded;
+            }
+
+            // TOGGLES
+
+            isTrimmerEnabled = Properties.Settings.Default.trimmerEnabled;
+
+            chkPlayLastUsedTrack.Checked = Properties.Settings.Default.playLastUsedTrack;
+            playLastUsed = Properties.Settings.Default.playLastUsedTrack;
+
+            chkAutoloadFolder.Checked = Properties.Settings.Default.autoloadFolder;
 
             bRemoveFolder.Visible = false;
+            panelBrowser.AutoScroll = true;
             mainPanel.BringToFront();
 
-            panelBrowser.AutoScroll = true;
+            // EVENTS
+
+            notice.DragDrop += mainPanel_DragDrop;
+            notice.DragEnter += mainPanel_DragEnter;
             panelBrowser.Paint += panelBrowser_Paint;
             panelBrowser.MouseMove += panelBrowser_MouseMove;
             panelBrowser.MouseLeave += panelBrowser_MouseLeave;
             panelBrowser.MouseClick += panelBrowser_MouseClick;
             panelBrowser.MouseDoubleClick += panelBrowser_MouseDoubleClick;
+
+            // POST-INIT CODE
+
+            if (autoLoadFolder)
+            {
+                string? selectedFolder = browseFolders.Items[0]?.ToString();
+                if (!string.IsNullOrWhiteSpace(selectedFolder))
+                {
+                    browseFolders.SelectedIndex = 0;
+                }
+            }
+
+            resetSwitcher();
+
+            if (playLastUsed && !string.IsNullOrEmpty(currentPlayingFile))
+            {
+                playSelection(currentPlayingFile, true);
+            }
+        }
+
+        private void resetSwitcher()
+        {
+            Properties.Settings.Default.trimmerEnabled = false;
+            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            bSwitchPageOnPlay.Tag = "off";
+
+            isTrimmerEnabled = false;
+            trimStart = null;
+            trimEnd = null;
         }
 
         private void customizeItem(int height, float fontSize)
@@ -461,7 +514,7 @@ namespace ReFrameAudio
         {
             playViaTrack(index);
 
-            if (Properties.Settings.Default.switchPage)
+            if (Properties.Settings.Default.trimmerEnabled)
             {
                 mainPanel.BringToFront();
                 isBrowserOpen = false;
@@ -475,6 +528,7 @@ namespace ReFrameAudio
             string selectedFile = audioFiles[selectedIndex];
             mainPanel.Tag = selectedFile;
             stopAudio();
+            resetSwitcher();
             playAudio(selectedFile);
             bPlayback.BackgroundImage = Properties.Resources.pause;
             isPaused = false;
@@ -499,6 +553,7 @@ namespace ReFrameAudio
                 currentPlayingFile = fileName;
                 mainPanel.Tag = fileName;
                 stopAudio();
+                resetSwitcher();
                 playAudio(fileName);
                 bPlayback.BackgroundImage = Properties.Resources.pause;
                 isPaused = false;
@@ -516,6 +571,7 @@ namespace ReFrameAudio
             currentPlayingFile = fileName;
             mainPanel.Tag = fileName;
             stopAudio();
+            resetSwitcher();
             playAudio(fileName);
             bPlayback.BackgroundImage = Properties.Resources.pause;
             isPaused = false;
@@ -825,6 +881,11 @@ namespace ReFrameAudio
             playbackTimer.Interval = 30;
             playbackTimer.Elapsed += PlaybackTimer_Elapsed;
 
+            if (isTrimmerEnabled && trimStart.HasValue)
+            {
+                audioFileReader.CurrentTime = trimStart.Value;
+            }
+
             playbackTimer.Start();
             waveOut.Play();
 
@@ -844,6 +905,20 @@ namespace ReFrameAudio
                         {
                             this.Invoke((MethodInvoker)delegate
                             {
+                                if (isTrimmerEnabled && trimEnd.HasValue && audioFileReader.CurrentTime >= trimEnd.Value)
+                                {
+                                    if (Properties.Settings.Default.audioRepeat)
+                                    {
+                                        audioFileReader.CurrentTime = trimStart ?? TimeSpan.Zero;
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        stopAudio();
+                                        return;
+                                    }
+                                }
+
                                 int newValue = (int)audioFileReader.CurrentTime.TotalMilliseconds;
                                 timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
 
@@ -941,12 +1016,14 @@ namespace ReFrameAudio
                         {
                             playViaTrack(index);
 
-                            if (Properties.Settings.Default.switchPage)
+                            /*
+                            if (Properties.Settings.Default.trimmerEnabled)
                             {
                                 mainPanel.BringToFront();
                                 isBrowserOpen = false;
                                 isSettingsOpen = false;
                             }
+                            */
                         }
                         break;
                     }
@@ -1307,6 +1384,7 @@ namespace ReFrameAudio
                 bRemoveFolder.Visible = true;
 
                 barAddress.Select();
+                bBrowseFolder.PerformClick();
             }
             else
             {
@@ -1551,17 +1629,42 @@ namespace ReFrameAudio
 
         private void bSwitchPageOnPlay_Click(object sender, EventArgs e)
         {
-            if (shouldSwitchOnPlay)
+
+            string currentState = bSwitchPageOnPlay.Tag?.ToString() ?? "off";
+
+            switch (currentState)
             {
-                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
-                Properties.Settings.Default.switchPage = false;
-                shouldSwitchOnPlay = false;
-            }
-            else
-            {
-                bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
-                Properties.Settings.Default.switchPage = true;
-                shouldSwitchOnPlay = true;
+                case "off":
+                    trimStart = audioFileReader?.CurrentTime;
+                    trimEnd = null;
+                    isTrimmerEnabled = false;
+
+                    bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
+                    bSwitchPageOnPlay.Tag = "state 1";
+
+                    Properties.Settings.Default.trimmerEnabled = false;
+                    break;
+
+                case "state 1":
+                    trimEnd = trimEnd = audioFileReader?.CurrentTime;
+                    isTrimmerEnabled = trimStart.HasValue && trimEnd.HasValue;
+
+                    bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected_b;
+                    bSwitchPageOnPlay.Tag = "state 2";
+
+                    Properties.Settings.Default.trimmerEnabled = true;
+                    break;
+
+                case "state 2":
+                    trimStart = null;
+                    trimEnd = null;
+                    isTrimmerEnabled = false;
+
+                    bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+                    bSwitchPageOnPlay.Tag = "off";
+
+                    Properties.Settings.Default.trimmerEnabled = false;
+                    break;
             }
         }
 
@@ -1603,7 +1706,7 @@ namespace ReFrameAudio
                     playSelection(fileName, false);
 
                     // ?
-                    if (Properties.Settings.Default.switchPage)
+                    if (Properties.Settings.Default.trimmerEnabled)
                     {
                         mainPanel.BringToFront();
                         isBrowserOpen = false;
@@ -1621,6 +1724,34 @@ namespace ReFrameAudio
                 Properties.Settings.Default.Reset();
                 Properties.Settings.Default.Save();
                 Application.Restart();
+            }
+        }
+
+        private void chkPlayLastUsedTrack_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!chkPlayLastUsedTrack.Checked)
+            {
+                Properties.Settings.Default.playLastUsedTrack = false;
+                Properties.Settings.Default.Save();
+            }
+            else
+            {
+                Properties.Settings.Default.playLastUsedTrack = true;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        private void chkAutoloadFolder_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!chkAutoloadFolder.Checked)
+            {
+                Properties.Settings.Default.autoloadFolder = false;
+                Properties.Settings.Default.Save();
+            }
+            else
+            {
+                Properties.Settings.Default.autoloadFolder = true;
+                Properties.Settings.Default.Save();
             }
         }
     }
