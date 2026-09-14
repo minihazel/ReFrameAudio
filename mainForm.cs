@@ -42,6 +42,15 @@ namespace ReFrameAudio
         private bool autoLoadFolder = false;
         private bool resumeTrack = false;
 
+        private enum loopState
+        {
+            None,
+            SetA,
+            SetAB
+        }
+
+        private loopState currentLoopState = loopState.None;
+
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
         public Color listHovercolor = Color.FromArgb(255, 46, 48, 50);
@@ -237,7 +246,7 @@ namespace ReFrameAudio
             {
                 this.BeginInvoke(new Action(() =>
                 {
-                    handleOpenedFile(currentPlayingFile);
+                    Task.Run(async () => await handleOpenedFile(currentPlayingFile));
                     Task.Run(() => runPipeServer());
                     isOpeningViaDefault = false;
                 }));
@@ -307,26 +316,11 @@ namespace ReFrameAudio
             autoLoadFolder = Properties.Settings.Default.autoloadFolder;
 
             // VOLUME
-
-            if (Properties.Settings.Default.audioVolume > 0)
-            {
-                float initialVolume = Properties.Settings.Default.audioVolume;
-                int volume_rounded = (int)Math.Round(initialVolume);
-                float multipliedVolume = multiplyVolume(volume_rounded);
-                volumeStatus.Text = volume_rounded.ToString() + "%";
-                volumeSlider.Value = volume_rounded;
-            }
-            else
-            {
-                float volume = 15.0f;
-                int volume_rounded = (int)Math.Round(volume);
-                float multipliedVolume = multiplyVolume(volume);
-                volumeStatus.Text = volume.ToString() + "%";
-                volumeSlider.Value = volume_rounded;
-            }
+            float savedVolume = Properties.Settings.Default.audioVolume;
+            volumeSlider.Value = (savedVolume > 0) ? savedVolume : 15.0f;
+            updateVolume();
 
             // TOGGLES
-
             isTrimmerEnabled = Properties.Settings.Default.trimmerEnabled;
 
             chkPlayLastUsedTrack.Checked = Properties.Settings.Default.playLastUsedTrack;
@@ -340,6 +334,8 @@ namespace ReFrameAudio
 
             // EVENTS
 
+            timestamp.SeekFinished += Timestamp_SeekFinished;
+            volumeSlider.ValueChanged += volumeSlider_ValueChanged;
             notice.DragDrop += mainPanel_DragDrop;
             notice.DragEnter += mainPanel_DragEnter;
             panelBrowser.Paint += panelBrowser_Paint;
@@ -359,23 +355,12 @@ namespace ReFrameAudio
                 }
             }
 
-            resetSwitcher();
+            resetLoop();
 
             if (playLastUsed && !string.IsNullOrEmpty(currentPlayingFile))
             {
                 playSelection(currentPlayingFile, true);
             }
-        }
-
-        private void resetSwitcher()
-        {
-            Properties.Settings.Default.trimmerEnabled = false;
-            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
-            bSwitchPageOnPlay.Tag = "off";
-
-            isTrimmerEnabled = false;
-            trimStart = null;
-            trimEnd = null;
         }
 
         private void customizeItem(int height, float fontSize)
@@ -535,7 +520,7 @@ namespace ReFrameAudio
             string selectedFile = audioFiles[selectedIndex];
             mainPanel.Tag = selectedFile;
             stopAudio();
-            resetSwitcher();
+            resetLoop();
             playAudio(selectedFile);
             bPlayback.BackgroundImage = Properties.Resources.pause;
             isPaused = false;
@@ -560,7 +545,7 @@ namespace ReFrameAudio
                 currentPlayingFile = fileName;
                 mainPanel.Tag = fileName;
                 stopAudio();
-                resetSwitcher();
+                resetLoop();
                 playAudio(fileName);
                 bPlayback.BackgroundImage = Properties.Resources.pause;
                 isPaused = false;
@@ -578,7 +563,7 @@ namespace ReFrameAudio
             currentPlayingFile = fileName;
             mainPanel.Tag = fileName;
             stopAudio();
-            resetSwitcher();
+            resetLoop();
             playAudio(fileName);
             bPlayback.BackgroundImage = Properties.Resources.pause;
             isPaused = false;
@@ -792,7 +777,8 @@ namespace ReFrameAudio
         private void updateVolume()
         {
             float volume = volumeSlider.Value;
-            volumeStatus.Text = volume.ToString() + "%";
+
+            // volumeStatus.Text = Math.Round(volume) + "%";
 
             if (waveOut != null && isPaused == false)
             {
@@ -810,11 +796,6 @@ namespace ReFrameAudio
 
             float dB = mindB + (maxdB - mindB) * normalized;
             return (float)Math.Pow(10.0f, dB / 20.0f);
-        }
-
-        private void volumeSlider_Scroll(object sender, EventArgs e)
-        {
-            updateVolume();
         }
 
         private bool isValidAudio(string filePath)
@@ -879,20 +860,20 @@ namespace ReFrameAudio
             waveOut.Init(audioFileReader);
             waveOut.PlaybackStopped += WaveOut_PlaybackStopped;
             waveOut.Volume = multiplyVolume((float)volumeSlider.Value);
-            volumeStatus.Text = volumeSlider.Value.ToString() + "%";
+            // volumeStatus.Text = volumeSlider.Value.ToString() + "%";
 
-            timestamp.Maximum = (int)audioFileReader.TotalTime.TotalMilliseconds;
-            timestamp.TickFrequency = timestamp.Maximum / 100;
+            timestamp.Minimum = 0;
+            timestamp.Maximum = (long)audioFileReader.TotalTime.TotalMilliseconds;
 
             if (resumeTrack && filePath == lastSavedTrack && savedMs > 0 && savedMs < timestamp.Maximum)
             {
                 audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(savedMs);
-                timestamp.Value = (int)savedMs;
+                timestamp.Value = savedMs;
             }
             else if (isTrimmerEnabled && trimStart.HasValue && trimEnd.HasValue)
             {
                 audioFileReader.CurrentTime = trimStart.Value;
-                timestamp.Value = (int)trimStart.Value.TotalMilliseconds;
+                timestamp.Value = (long)trimStart.Value.TotalMilliseconds;
             }
             else
             {
@@ -913,8 +894,142 @@ namespace ReFrameAudio
             Text = Path.GetFileName(filePath) + " - ReFrame";
         }
 
-        private void PlaybackTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void setPointA_Click(object sender, EventArgs e)
         {
+            if (audioFileReader == null) return;
+
+            timestamp.LoopStart = audioFileReader.Position;
+            timestamp.IsLoopActive = true;
+        }
+
+        private void setPointB_Click(object sender, EventArgs e)
+        {
+            if (audioFileReader == null) return;
+
+            if (audioFileReader.Position > timestamp.LoopStart)
+            {
+                timestamp.LoopEnd = audioFileReader.Position;
+                timestamp.IsLoopActive = true;
+            }
+        }
+
+        private void clearLoop_Click(object sender, EventArgs e)
+        {
+            timestamp.IsLoopActive = false;
+            timestamp.LoopStart = -1;
+            timestamp.LoopEnd = -1;
+        }
+
+        private void PlaybackTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
+            try
+            {
+                if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
+                {
+                    if (!this.IsDisposed && !this.Disposing)
+                    {
+                        if (audioFileReader != null)
+                        {
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                long currentMs = (long)audioFileReader.CurrentTime.TotalMilliseconds;
+
+                                // 1. A-B Loop Enforcement (takes priority while playing)
+                                if (timestamp.IsLoopActive &&
+                                    timestamp.LoopEnd > timestamp.LoopStart &&
+                                    currentMs >= timestamp.LoopEnd)
+                                {
+                                    audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.LoopStart);
+
+                                    if (!timestamp.IsDragging)
+                                    {
+                                        timestamp.Value = timestamp.LoopStart;
+                                    }
+
+                                    currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
+                                    return;
+                                }
+
+                                // 2. Global Trimmer Logic
+                                if (isTrimmerEnabled && trimEnd.HasValue && audioFileReader.CurrentTime >= trimEnd.Value)
+                                {
+                                    if (Properties.Settings.Default.audioRepeat)
+                                    {
+                                        audioFileReader.CurrentTime = trimStart ?? TimeSpan.Zero;
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        stopAudio();
+                                        return;
+                                    }
+                                }
+
+                                // 3. Regular Timestamp Update
+                                if (!timestamp.IsDragging)
+                                {
+                                    timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, currentMs));
+                                }
+
+                                currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log or handle exceptions
+            }
+
+
+            /*
+            try
+            {
+                if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
+                {
+                    if (!this.IsDisposed && !this.Disposing)
+                    {
+                        if (audioFileReader != null)
+                        {
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                if (isTrimmerEnabled && trimEnd.HasValue && audioFileReader.CurrentTime >= trimEnd.Value)
+                                {
+                                    if (Properties.Settings.Default.audioRepeat)
+                                    {
+                                        audioFileReader.CurrentTime = trimStart ?? TimeSpan.Zero;
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        stopAudio();
+                                        return;
+                                    }
+                                }
+
+                                if (!timestamp.IsDragging)
+                                {
+                                    long currentMs = (long)audioFileReader.CurrentTime.TotalMilliseconds;
+                                    timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, currentMs));
+                                }
+
+                                currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log or handle exceptions
+            }
+            */
+
+
+
+
+            /*
             try
             {
                 if (waveOut != null && waveOut.PlaybackState == PlaybackState.Playing)
@@ -952,6 +1067,7 @@ namespace ReFrameAudio
             catch (Exception ex)
             {
             }
+            */
         }
 
         private void mainPanel_DragEnter(object sender, DragEventArgs e)
@@ -1009,7 +1125,7 @@ namespace ReFrameAudio
             }
         }
 
-        private void WaveOut_PlaybackStopped(object sender, StoppedEventArgs args)
+        private void WaveOut_PlaybackStopped(object? sender, StoppedEventArgs args)
         {
             string? currentFile = mainPanel.Tag?.ToString();
             Properties.Settings.Default.lastPlayback = 0;
@@ -1061,7 +1177,7 @@ namespace ReFrameAudio
         {
             if (volumeSlider.Value > 0)
             {
-                Properties.Settings.Default.audioVolume = float.Parse(volumeStatus.Text.Replace("%", string.Empty));
+                Properties.Settings.Default.audioVolume = volumeSlider.Value;
                 Properties.Settings.Default.Save();
             }
 
@@ -1516,7 +1632,7 @@ namespace ReFrameAudio
 
         private void volumeSlider_ValueChanged(object sender, EventArgs e)
         {
-
+            updateVolume();
         }
 
         private void mainPanel_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -1608,6 +1724,15 @@ namespace ReFrameAudio
             }
         }
 
+        private void Timestamp_SeekFinished(object? sender, EventArgs e)
+        {
+            if (audioFileReader != null)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
+            }
+        }
+
+        /*
         private void timestamp_MouseDown(object sender, MouseEventArgs e)
         {
             isDragging = true;
@@ -1633,18 +1758,17 @@ namespace ReFrameAudio
             }
 
 
+            // comment out below
+            // float percent = (float)mouseX / timestamp.Width;
+            // int newValue = timestamp.Minimum + (int)((timestamp.Maximum - timestamp.Minimum) * percent);
+            // newValue = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
 
-            /*
-            float percent = (float)mouseX / timestamp.Width;
-            int newValue = timestamp.Minimum + (int)((timestamp.Maximum - timestamp.Minimum) * percent);
-            newValue = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, newValue));
-
-            timestamp.Value = newValue;
-            if (audioFileReader != null)
-            {
-                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
-            }
-            */
+            // timestamp.Value = newValue;
+            //  if (audioFileReader != null)
+            // {
+            //     audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
+            // }
+            // comment out above
         }
 
         private void timestamp_MouseMove(object sender, MouseEventArgs e)
@@ -1656,6 +1780,7 @@ namespace ReFrameAudio
         {
             isDragging = false;
         }
+        */
 
         private void mainPanel_Paint(object sender, PaintEventArgs e)
         {
@@ -1677,7 +1802,39 @@ namespace ReFrameAudio
 
         private void bSwitchPageOnPlay_Click(object sender, EventArgs e)
         {
+            if (audioFileReader == null) return;
 
+            long currentMs = (long)audioFileReader.CurrentTime.TotalMilliseconds;
+
+            switch (currentLoopState)
+            {
+                case loopState.None:
+                    // State 1: Lock Point A
+                    timestamp.LoopStart = currentMs;
+                    timestamp.LoopEnd = -1;
+                    timestamp.IsLoopActive = false;
+                    currentLoopState = loopState.SetA;
+                    bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected;
+                    break;
+
+                case loopState.SetA:
+                    // State 2: Lock Point B (only if B is ahead of A)
+                    if (currentMs > timestamp.LoopStart)
+                    {
+                        timestamp.LoopEnd = currentMs;
+                        timestamp.IsLoopActive = true;
+                        currentLoopState = loopState.SetAB;
+                        bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip_selected_b;
+                    }
+                    break;
+
+                case loopState.SetAB:
+                    // State 3: Clear Loop
+                    resetLoop();
+                    break;
+            }
+
+            /*
             string currentState = bSwitchPageOnPlay.Tag?.ToString() ?? "off";
 
             switch (currentState)
@@ -1714,6 +1871,18 @@ namespace ReFrameAudio
                     Properties.Settings.Default.trimmerEnabled = false;
                     break;
             }
+            */
+        }
+
+        private void resetLoop()
+        {
+            timestamp.IsLoopActive = false;
+            timestamp.LoopStart = -1;
+            timestamp.LoopEnd = -1;
+            currentLoopState = loopState.None;
+
+            bSwitchPageOnPlay.BackgroundImage = Properties.Resources.flip;
+            bSwitchPageOnPlay.UseVisualStyleBackColor = true;
         }
 
         private void barFolderName_KeyDown(object sender, KeyEventArgs e)

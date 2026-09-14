@@ -31,16 +31,16 @@
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
+            volumeSlider = new ReFrameVolumeSlider();
+            timestamp = new ReFrameSlider();
             bSwitchPageOnPlay = new Button();
             bStopAudio = new Button();
             bRepeat = new Button();
             volumeStatus = new Label();
             bMute = new Button();
-            volumeSlider = new TrackBar();
             bPlayback = new Button();
             endTime = new Label();
             currentTime = new Label();
-            timestamp = new TrackBar();
             mainPanel = new Panel();
             notice = new Label();
             browserPanel = new Panel();
@@ -67,8 +67,6 @@
             bRemoveFolder = new Button();
             videoToolTip = new ToolTip(components);
             controlPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)volumeSlider).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)timestamp).BeginInit();
             mainPanel.SuspendLayout();
             browserPanel.SuspendLayout();
             settingsPanel.SuspendLayout();
@@ -81,20 +79,54 @@
             // 
             controlPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             controlPanel.BackColor = SystemColors.ControlLight;
+            controlPanel.Controls.Add(volumeSlider);
+            controlPanel.Controls.Add(timestamp);
             controlPanel.Controls.Add(bSwitchPageOnPlay);
             controlPanel.Controls.Add(bStopAudio);
             controlPanel.Controls.Add(bRepeat);
             controlPanel.Controls.Add(volumeStatus);
             controlPanel.Controls.Add(bMute);
-            controlPanel.Controls.Add(volumeSlider);
             controlPanel.Controls.Add(bPlayback);
             controlPanel.Controls.Add(endTime);
             controlPanel.Controls.Add(currentTime);
-            controlPanel.Controls.Add(timestamp);
             controlPanel.Location = new Point(0, 474);
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
+            // 
+            // volumeSlider
+            // 
+            volumeSlider.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            volumeSlider.ForeColor = SystemColors.ControlLight;
+            volumeSlider.Location = new Point(382, 35);
+            volumeSlider.Name = "volumeSlider";
+            volumeSlider.ProgressColor = Color.FromArgb(72, 210, 72);
+            volumeSlider.Size = new Size(99, 30);
+            volumeSlider.TabIndex = 17;
+            volumeSlider.Text = "reFrameVolumeSlider1";
+            volumeSlider.ThumbColor = Color.White;
+            volumeSlider.TrackColor = Color.FromArgb(189, 189, 189);
+            volumeSlider.Value = 25F;
+            // 
+            // timestamp
+            // 
+            timestamp.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            timestamp.IsLoopActive = false;
+            timestamp.Location = new Point(49, 1);
+            timestamp.LoopEnd = -1L;
+            timestamp.LoopStart = -1L;
+            timestamp.Maximum = 100L;
+            timestamp.Minimum = 0L;
+            timestamp.Name = "timestamp";
+            timestamp.ProgressColor = Color.FromArgb(0, 120, 215);
+            timestamp.Size = new Size(392, 23);
+            timestamp.TabIndex = 15;
+            timestamp.Text = "reFrameSlider1";
+            timestamp.ThumbColor = Color.White;
+            timestamp.ThumbSize = 12;
+            timestamp.TrackColor = Color.FromArgb(189, 189, 189);
+            timestamp.TrackHeight = 8;
+            timestamp.Value = 0L;
             // 
             // bSwitchPageOnPlay
             // 
@@ -158,13 +190,14 @@
             // volumeStatus
             // 
             volumeStatus.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            volumeStatus.Font = new Font("Bahnschrift SemiLight", 8F);
-            volumeStatus.Location = new Point(376, 18);
+            volumeStatus.Font = new Font("Bahnschrift SemiLight", 7F);
+            volumeStatus.Location = new Point(229, 27);
             volumeStatus.Name = "volumeStatus";
-            volumeStatus.Size = new Size(35, 18);
+            volumeStatus.Padding = new Padding(2, 0, 0, 0);
+            volumeStatus.Size = new Size(52, 18);
             volumeStatus.TabIndex = 7;
             volumeStatus.Text = "00%";
-            volumeStatus.TextAlign = ContentAlignment.BottomCenter;
+            volumeStatus.TextAlign = ContentAlignment.BottomLeft;
             // 
             // bMute
             // 
@@ -182,21 +215,6 @@
             bMute.TabIndex = 6;
             bMute.Text = "🔊";
             bMute.UseVisualStyleBackColor = false;
-            // 
-            // volumeSlider
-            // 
-            volumeSlider.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            volumeSlider.AutoSize = false;
-            volumeSlider.Location = new Point(376, 39);
-            volumeSlider.Maximum = 100;
-            volumeSlider.Name = "volumeSlider";
-            volumeSlider.Size = new Size(115, 23);
-            volumeSlider.SmallChange = 5;
-            volumeSlider.TabIndex = 5;
-            volumeSlider.TickFrequency = 10;
-            volumeSlider.TickStyle = TickStyle.None;
-            volumeSlider.Scroll += volumeSlider_Scroll;
-            volumeSlider.ValueChanged += volumeSlider_ValueChanged;
             // 
             // bPlayback
             // 
@@ -237,21 +255,6 @@
             currentTime.TabIndex = 1;
             currentTime.Text = "00:00";
             currentTime.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // timestamp
-            // 
-            timestamp.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            timestamp.AutoSize = false;
-            timestamp.Location = new Point(44, 2);
-            timestamp.Maximum = 1000;
-            timestamp.Name = "timestamp";
-            timestamp.Size = new Size(404, 23);
-            timestamp.TabIndex = 0;
-            timestamp.TickStyle = TickStyle.None;
-            timestamp.Scroll += timestamp_Scroll;
-            timestamp.MouseDown += timestamp_MouseDown;
-            timestamp.MouseMove += timestamp_MouseMove;
-            timestamp.MouseUp += timestamp_MouseUp;
             // 
             // mainPanel
             // 
@@ -382,7 +385,7 @@
             label1.AutoSize = true;
             label1.Font = new Font("Bahnschrift SemiLight", 12F);
             label1.ForeColor = Color.FromArgb(64, 64, 64);
-            label1.Location = new Point(29, 118);
+            label1.Location = new Point(29, 119);
             label1.Name = "label1";
             label1.Size = new Size(23, 19);
             label1.TabIndex = 14;
@@ -456,7 +459,7 @@
             settingsContent.Controls.Add(lblFolderName);
             settingsContent.Controls.Add(bBrowseFolder);
             settingsContent.Controls.Add(bRemoveFolder);
-            settingsContent.Location = new Point(11, 188);
+            settingsContent.Location = new Point(11, 183);
             settingsContent.Name = "settingsContent";
             settingsContent.Size = new Size(469, 224);
             settingsContent.TabIndex = 10;
@@ -612,8 +615,6 @@
             Shown += mainForm_Shown;
             KeyDown += mainForm_KeyDown;
             controlPanel.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)volumeSlider).EndInit();
-            ((System.ComponentModel.ISupportInitialize)timestamp).EndInit();
             mainPanel.ResumeLayout(false);
             mainPanel.PerformLayout();
             browserPanel.ResumeLayout(false);
@@ -631,12 +632,10 @@
 
         private Panel controlPanel;
         private Panel mainPanel;
-        private TrackBar timestamp;
         private Label currentTime;
         private Label endTime;
         private Button bPlayback;
         private Button bMute;
-        private TrackBar volumeSlider;
         private Label volumeStatus;
         private Button bRepeat;
         private Panel browserPanel;
@@ -665,5 +664,7 @@
         private CheckBox chkAutoloadFolder;
         private Label label1;
         private CheckBox chkUseLastTimestamp;
+        private ReFrameSlider timestamp;
+        private ReFrameVolumeSlider volumeSlider;
     }
 }
