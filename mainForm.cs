@@ -1,4 +1,5 @@
-﻿using NAudio.Utils;
+﻿using LibVLCSharp.Shared;
+using NAudio.Utils;
 using NAudio.Wave;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,12 +22,16 @@ namespace ReFrameAudio
 {
     public partial class mainForm : Form
     {
+        private LibVLC _libVLC;
+        private MediaPlayer _mediaPlayer;
+
         private const string pipeName = "ReFrameAudioPipe";
         public string audioBaseConfig =
             "{" +
             "   \"folders\": []" +
             "}";
         public string currentPlayingFile = string.Empty;
+
 
         private bool isStopped = true;
         private bool isPaused = true;
@@ -42,6 +47,12 @@ namespace ReFrameAudio
         private bool autoLoadFolder = false;
         private bool resumeTrack = false;
 
+
+        private Timer playbackTimer;
+        private WaveOutEvent waveOut;
+        private AudioFileReader audioFileReader;
+
+
         private enum loopState
         {
             None,
@@ -51,16 +62,13 @@ namespace ReFrameAudio
 
         private loopState currentLoopState = loopState.None;
 
+
         public Color listBackcolor = Color.FromArgb(255, 32, 34, 36);
         public Color listSelectedcolor = Color.FromArgb(255, 42, 44, 46);
         public Color listHovercolor = Color.FromArgb(255, 46, 48, 50);
-
         public Color borderColor = Color.FromArgb(255, 100, 100, 100);
         public Color borderColorActive = Color.DodgerBlue;
 
-        private Timer playbackTimer;
-        private WaveOutEvent waveOut;
-        private AudioFileReader audioFileReader;
 
         // browser variables
         private List<string> audioFiles = new List<string>();
@@ -101,7 +109,34 @@ namespace ReFrameAudio
         public mainForm()
         {
             InitializeComponent();
+
+            resolutionStrip.Renderer = new ReFrameContextStrip();
+            resolutionStrip.ShowImageMargin = false;
+            resolutionStrip.ShowCheckMargin = false;
+            resolutionStrip.Font = new Font("Bahnschrift SemiLight", 10f, FontStyle.Regular);
+            resolutionStrip.MinimumSize = new Size(171, 40);
+
             this.MouseWheel += mainPanel_MouseWheel;
+            foreach (ToolStripItem item in resolutionStrip.Items)
+            {
+                if (item is ToolStripMenuItem menuItem)
+                {
+                    menuItem.Padding = new Padding(14, 10, 39, 10);
+                }
+            }
+
+            Core.Initialize();
+            _libVLC = new LibVLC();
+
+            var options = new string[]
+            {
+                "--no-audio",
+                "--avcodec-hw=any",
+                "--file-caching=300"
+            };
+
+            _mediaPlayer = new MediaPlayer(_libVLC);
+            mediaViewer.MediaPlayer = _mediaPlayer;
         }
 
         public mainForm(string filePath) : this() // Calls the default constructor first
@@ -336,8 +371,6 @@ namespace ReFrameAudio
 
             timestamp.SeekFinished += Timestamp_SeekFinished;
             volumeSlider.ValueChanged += volumeSlider_ValueChanged;
-            notice.DragDrop += mainPanel_DragDrop;
-            notice.DragEnter += mainPanel_DragEnter;
             panelBrowser.Paint += panelBrowser_Paint;
             panelBrowser.MouseMove += panelBrowser_MouseMove;
             panelBrowser.MouseLeave += panelBrowser_MouseLeave;
@@ -571,6 +604,76 @@ namespace ReFrameAudio
             panelBrowser.Invalidate();
         }
 
+        private void displayVideo(string path)
+        {
+            using (var media = new Media(_libVLC, path, FromType.FromPath))
+            {
+                _mediaPlayer.AspectRatio = null;
+                _mediaPlayer.Media = media;
+                _mediaPlayer.Play();
+            }
+        }
+
+        private void setSliderLength(long lengthMs)
+        {
+            timestamp.Minimum = 0;
+            timestamp.Maximum = lengthMs; // duration in milliseconds
+        }
+
+        private void MediaPlayer_LengthChanged(object sender, MediaPlayerLengthChangedEventArgs e)
+        {
+            // LibVLC events run on a background thread—marshal to UI thread
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => setSliderLength(e.Length)));
+            }
+            else
+            {
+                setSliderLength(e.Length);
+            }
+        }
+
+        private void MediaPlayer_TimeChanged(object sender, MediaPlayerTimeChangedEventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => updateSliderPosition(e.Time)));
+            }
+            else
+            {
+                updateSliderPosition(e.Time);
+            }
+        }
+
+        private void updateSliderPosition(long currentMs)
+        {
+            if (timestamp.IsDragging) return;
+            if (timestamp.IsLoopActive && timestamp.LoopEnd > timestamp.LoopStart && currentMs >= timestamp.LoopEnd)
+            {
+                _mediaPlayer.Time = timestamp.LoopStart;
+                timestamp.Value = timestamp.LoopStart;
+                return;
+            }
+
+            timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, currentMs));
+
+            TimeSpan ts = TimeSpan.FromMilliseconds(currentMs);
+            currentTime.Text = ts.ToString(@"mm\:ss");
+        }
+
+        private void Timestamp_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (audioFileReader != null)
+            {
+                audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.Value);
+            }
+
+            if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
+            {
+                _mediaPlayer.Time = timestamp.Value;
+            }
+        }
+
         private async Task listAudioFiles(string[] files)
         {
             audioFiles.Clear();
@@ -778,8 +881,6 @@ namespace ReFrameAudio
         {
             float volume = volumeSlider.Value;
 
-            // volumeStatus.Text = Math.Round(volume) + "%";
-
             if (waveOut != null && isPaused == false)
             {
                 waveOut.Volume = multiplyVolume(volume); // Your function already handles 0%
@@ -817,10 +918,13 @@ namespace ReFrameAudio
 
         private void stopAudio()
         {
+            bResizeWindow.Enabled = false;
+            bResizeWindow.BackgroundImage = Properties.Resources.double_arrows_deselected;
+
             if (playbackTimer != null)
             {
-                playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
                 playbackTimer.Stop();
+                playbackTimer.Elapsed -= PlaybackTimer_Elapsed;
                 playbackTimer.Dispose();
                 playbackTimer = null;
             }
@@ -836,14 +940,24 @@ namespace ReFrameAudio
             if (audioFileReader != null)
             {
                 audioFileReader.Dispose();
-                audioFileReader.Close();
                 audioFileReader = null;
+            }
+
+            if (_mediaPlayer != null)
+            {
+                if (_mediaPlayer.IsPlaying)
+                {
+                    _mediaPlayer.Stop();
+                }
             }
 
             currentTime.Text = "00:00";
             endTime.Text = "00:00";
             timestamp.Maximum = 100;
             timestamp.Value = 0;
+
+            isStopped = true;
+            isPaused = false;
         }
 
         private void playAudio(string filePath)
@@ -860,7 +974,6 @@ namespace ReFrameAudio
             waveOut.Init(audioFileReader);
             waveOut.PlaybackStopped += WaveOut_PlaybackStopped;
             waveOut.Volume = multiplyVolume((float)volumeSlider.Value);
-            // volumeStatus.Text = volumeSlider.Value.ToString() + "%";
 
             timestamp.Minimum = 0;
             timestamp.Maximum = (long)audioFileReader.TotalTime.TotalMilliseconds;
@@ -882,6 +995,25 @@ namespace ReFrameAudio
             }
 
             endTime.Text = audioFileReader.TotalTime.ToString(@"mm\:ss");
+
+            if (_mediaPlayer != null)
+            {
+                if (_mediaPlayer.IsPlaying) _mediaPlayer.Stop();
+                if (Path.GetExtension(filePath).Equals(".mp4", StringComparison.OrdinalIgnoreCase))
+                {
+                    bResizeWindow.Enabled = true;
+                    bResizeWindow.BackgroundImage = Properties.Resources.double_arrows_deselected;
+
+                    using (var media = new Media(_libVLC, filePath, FromType.FromPath))
+                    {
+                        _mediaPlayer.AspectRatio = null;
+                        _mediaPlayer.Media = media;
+                        _mediaPlayer.Mute = true;
+                        _mediaPlayer.Play();
+                        _mediaPlayer.Time = timestamp.Value;
+                    }
+                }
+            }
 
             playbackTimer = new Timer();
             playbackTimer.Interval = 30;
@@ -932,6 +1064,8 @@ namespace ReFrameAudio
                         {
                             this.Invoke((MethodInvoker)delegate
                             {
+                                if (audioFileReader == null) return;
+
                                 long currentMs = (long)audioFileReader.CurrentTime.TotalMilliseconds;
 
                                 // 1. A-B Loop Enforcement (takes priority while playing)
@@ -940,6 +1074,11 @@ namespace ReFrameAudio
                                     currentMs >= timestamp.LoopEnd)
                                 {
                                     audioFileReader.CurrentTime = TimeSpan.FromMilliseconds(timestamp.LoopStart);
+
+                                    if (_mediaPlayer != null)
+                                    {
+                                        _mediaPlayer.Time = timestamp.LoopStart;
+                                    }
 
                                     if (!timestamp.IsDragging)
                                     {
@@ -969,6 +1108,15 @@ namespace ReFrameAudio
                                 if (!timestamp.IsDragging)
                                 {
                                     timestamp.Value = Math.Max(timestamp.Minimum, Math.Min(timestamp.Maximum, currentMs));
+                                }
+
+                                if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
+                                {
+                                    long videoMs = _mediaPlayer.Time;
+                                    if (Math.Abs(videoMs - currentMs) > 250)
+                                    {
+                                        _mediaPlayer.Time = currentMs;
+                                    }
                                 }
 
                                 currentTime.Text = audioFileReader.CurrentTime.ToString(@"mm\:ss");
@@ -1203,38 +1351,6 @@ namespace ReFrameAudio
 
         private void bPlayback_Click(object sender, EventArgs e)
         {
-            /*
-            if (mainPanel.Tag == null)
-            {
-                OpenFileDialog ofd = new OpenFileDialog()
-                {
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    Title = "Select an audio file",
-                    Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.mp4",
-                };
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    string selectedFile = ofd.FileName;
-                    if (string.IsNullOrEmpty(selectedFile))
-                    {
-                        return;
-                    }
-                    if (!File.Exists(selectedFile))
-                    {
-                        MessageBox.Show("The selected audio file does not exist.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                    mainPanel.Tag = selectedFile;
-                    stopAudio();
-                    playAudio(selectedFile);
-                    bPlayback.BackgroundImage = Properties.Resources.pause;
-                    isPaused = false;
-                }
-                else
-                    return;
-            }
-            */
-
             if (isStopped)
             {
                 string? currentFile = mainPanel.Tag?.ToString();
@@ -1254,56 +1370,30 @@ namespace ReFrameAudio
                 if (waveOut != null)
                     waveOut.Pause();
 
+                if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
+                {
+                    _mediaPlayer.SetPause(true);
+                }
+
                 bPlayback.BackgroundImage = Properties.Resources.paused_play;
                 isPaused = true;
             }
             else
             {
+                if (_mediaPlayer != null && audioFileReader != null)
+                {
+                    long currentAudioMs = (long)(audioFileReader.CurrentTime.TotalMilliseconds);
+                    _mediaPlayer.Time = currentAudioMs;
+
+                    _mediaPlayer.SetPause(false);
+                }
+
                 if (waveOut != null)
                     waveOut.Play();
 
                 bPlayback.BackgroundImage = Properties.Resources.pause;
                 isPaused = false;
             }
-
-            /*
-            if (isStopped)
-            {
-                if (waveOut != null)
-                {
-                    try
-                    {
-                        Debug.WriteLine($"waveOut.PlaybackState: {waveOut.PlaybackState}");
-
-                        if (waveOut.PlaybackState == PlaybackState.Stopped)
-                        {
-                            string? currentAudio = mainPanel.Tag?.ToString();
-                            if (!string.IsNullOrEmpty(currentAudio))
-                            {
-                                stopAudio();
-                                playAudio(currentAudio);
-                            }
-                        }
-                        else
-                        {
-                            waveOut.Play();
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error playing audio: {ex.Message}");
-
-                        string? currentAudio = mainPanel.Tag?.ToString();
-                        if (!string.IsNullOrEmpty(currentAudio))
-                        {
-                            stopAudio();
-                            playAudio(currentAudio);
-                        }
-                    }
-                }
-            }
-            */
         }
 
         private void bRepeat_Click(object sender, EventArgs e)
@@ -1984,6 +2074,11 @@ namespace ReFrameAudio
                 Properties.Settings.Default.resumeTrackTimestamp = true;
                 Properties.Settings.Default.Save();
             }
+        }
+
+        private void bResetWindowSize_Click(object sender, EventArgs e)
+        {
+            Size = new Size(509, 607);
         }
     }
 }

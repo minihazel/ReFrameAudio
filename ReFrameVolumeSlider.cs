@@ -27,6 +27,12 @@ namespace ReFrameAudio
         public event EventHandler? ValueChanged;
 
         #region Category Properties (Designer)
+        [Category("Volumeline Appearance")]
+        public int TrackHeight { get => trackHeight; set { trackHeight = value; Invalidate(); } }
+
+        [Category("Volumeline Appearance")]
+        public int ThumbSize { get => thumbSize; set { thumbSize = value; Invalidate(); } }
+
         [Category("Volume Appearance")]
         public Color TrackColor
         {
@@ -104,7 +110,7 @@ namespace ReFrameAudio
                      ControlStyles.ResizeRedraw, true);
 
             Height = 20;
-            Cursor = Cursors.Hand;
+            Cursor = Cursors.Arrow;
         }
 
         #region Mouse Events
