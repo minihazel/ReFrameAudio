@@ -1,15 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Drawing.Drawing2D;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ReFrameAudio
 {
     public class ReFrameVolumeSlider : Control
     {
+        /*
+         * custom volume slider, I got tired of using a Windows trackbar. that shit is so outdated
+         * support for track height (how thick it is) and thumb tack size,
+         * aka the knob that shows where you are on the timeline
+         * 
+         * - supports standard timeline color and progress color
+         * - supports removing the thumb tack by setting thumb size to 0
+         * - supports status for volume to display percentage (i.e 25% volume)
+         * 
+         * I wanted this to be as close to VLC's volume slider as I could get it, without having the diagonal element
+         * in my opinion, this is fairly elegant
+        */
+
         // VALUES
 
         private float value = 1.0f; // 0.0f to 1.0f
@@ -142,6 +150,8 @@ namespace ReFrameAudio
 
         private void updateMouseValue(int mouseX)
         {
+            // updating value as you use your mouse to draw the slider
+
             int margin = thumbSize / 2;
             int usableWidth = Width - (margin * 2);
             if (usableWidth <= 0) return;
@@ -157,6 +167,9 @@ namespace ReFrameAudio
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            // drawing the status display for volume percentage is included here
+            // font, size, and position are fully customizable
+
             base.OnPaint(e);
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -170,7 +183,7 @@ namespace ReFrameAudio
             float ratio = (value - minimum) / (maximum - minimum);
             int progressWidth = (int)(usableWidth * ratio);
 
-            // draw Background Track
+            // draw background bar
             using (var brush = new SolidBrush(trackColor))
             {
                 g.FillRectangle(brush, margin, trackY, usableWidth, trackHeight);
@@ -204,7 +217,7 @@ namespace ReFrameAudio
                         font,
                         new Point(textX, textY),
                         textColor,
-                        /* TextFormatFlags.NoPadding | */ TextFormatFlags.NoClipping
+                        TextFormatFlags.NoClipping
                     );
                 }
             }

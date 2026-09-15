@@ -31,12 +31,13 @@
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             controlPanel = new Panel();
+            panelSeparator1 = new Panel();
             bResizeWindow = new Button();
             resolutionStrip = new ContextMenuStrip(components);
-            toolStripMenuItem1 = new ToolStripMenuItem();
-            toolStripMenuItem2 = new ToolStripMenuItem();
-            toolStripMenuItem3 = new ToolStripMenuItem();
-            toolStripMenuItem4 = new ToolStripMenuItem();
+            resolution1 = new ToolStripMenuItem();
+            resolution2 = new ToolStripMenuItem();
+            resolution3 = new ToolStripMenuItem();
+            resetRes = new ToolStripMenuItem();
             volumeSlider = new ReFrameVolumeSlider();
             timestamp = new ReFrameSlider();
             bSwitchPageOnPlay = new Button();
@@ -54,13 +55,17 @@
             bDrawer = new Button();
             bSettings = new Button();
             settingsPanel = new Panel();
-            bResetWindowSize = new Button();
-            label1 = new Label();
-            chkUseLastTimestamp = new CheckBox();
-            chkAutoloadFolder = new CheckBox();
-            chkPlayLastUsedTrack = new CheckBox();
             lblAvailableFolders = new Label();
             availableFolders = new ComboBox();
+            panelSettings = new Panel();
+            chkResetWindowSizeOnStartup = new CheckBox();
+            chkAutoOpenVideos = new CheckBox();
+            chkHideScroll = new CheckBox();
+            bResetWindowSize = new Button();
+            chkPlayLastUsedTrack = new CheckBox();
+            label1 = new Label();
+            chkAutoloadFolder = new CheckBox();
+            chkUseLastTimestamp = new CheckBox();
             settingsContent = new Panel();
             bFactoryReset = new Button();
             panel1 = new Panel();
@@ -78,6 +83,7 @@
             ((System.ComponentModel.ISupportInitialize)mediaViewer).BeginInit();
             browserPanel.SuspendLayout();
             settingsPanel.SuspendLayout();
+            panelSettings.SuspendLayout();
             settingsContent.SuspendLayout();
             panel1.SuspendLayout();
             panel2.SuspendLayout();
@@ -87,6 +93,7 @@
             // 
             controlPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             controlPanel.BackColor = SystemColors.ControlLight;
+            controlPanel.Controls.Add(panelSeparator1);
             controlPanel.Controls.Add(bResizeWindow);
             controlPanel.Controls.Add(volumeSlider);
             controlPanel.Controls.Add(timestamp);
@@ -97,10 +104,19 @@
             controlPanel.Controls.Add(bPlayback);
             controlPanel.Controls.Add(endTime);
             controlPanel.Controls.Add(currentTime);
-            controlPanel.Location = new Point(0, 497);
+            controlPanel.Location = new Point(0, 432);
             controlPanel.Name = "controlPanel";
             controlPanel.Size = new Size(493, 71);
             controlPanel.TabIndex = 0;
+            // 
+            // panelSeparator1
+            // 
+            panelSeparator1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            panelSeparator1.Location = new Point(73, 42);
+            panelSeparator1.Name = "panelSeparator1";
+            panelSeparator1.Size = new Size(10, 22);
+            panelSeparator1.TabIndex = 19;
+            panelSeparator1.Paint += panelSeparator1_Paint;
             // 
             // bResizeWindow
             // 
@@ -117,44 +133,48 @@
             bResizeWindow.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bResizeWindow.FlatStyle = FlatStyle.Flat;
             bResizeWindow.Font = new Font("Bahnschrift SemiLight", 20F);
-            bResizeWindow.Location = new Point(146, 44);
+            bResizeWindow.Location = new Point(159, 44);
             bResizeWindow.Name = "bResizeWindow";
-            bResizeWindow.Size = new Size(18, 18);
+            bResizeWindow.Size = new Size(16, 16);
             bResizeWindow.TabIndex = 18;
             bResizeWindow.Tag = "";
             bResizeWindow.UseVisualStyleBackColor = false;
             // 
             // resolutionStrip
             // 
-            resolutionStrip.Items.AddRange(new ToolStripItem[] { toolStripMenuItem1, toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem4 });
+            resolutionStrip.Items.AddRange(new ToolStripItem[] { resolution1, resolution2, resolution3, resetRes });
             resolutionStrip.Name = "resolutionStrip";
             resolutionStrip.RenderMode = ToolStripRenderMode.Professional;
             resolutionStrip.ShowImageMargin = false;
             resolutionStrip.Size = new Size(100, 92);
             // 
-            // toolStripMenuItem1
+            // resolution1
             // 
-            toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new Size(99, 22);
-            toolStripMenuItem1.Text = "⛶   480p";
+            resolution1.Name = "resolution1";
+            resolution1.Size = new Size(99, 22);
+            resolution1.Text = "⛶   480p";
+            resolution1.Click += resolution1_Click;
             // 
-            // toolStripMenuItem2
+            // resolution2
             // 
-            toolStripMenuItem2.Name = "toolStripMenuItem2";
-            toolStripMenuItem2.Size = new Size(99, 22);
-            toolStripMenuItem2.Text = "⛶   720p";
+            resolution2.Name = "resolution2";
+            resolution2.Size = new Size(99, 22);
+            resolution2.Text = "⛶   720p";
+            resolution2.Click += resolution2_Click;
             // 
-            // toolStripMenuItem3
+            // resolution3
             // 
-            toolStripMenuItem3.Name = "toolStripMenuItem3";
-            toolStripMenuItem3.Size = new Size(99, 22);
-            toolStripMenuItem3.Text = "⛶   1080p";
+            resolution3.Name = "resolution3";
+            resolution3.Size = new Size(99, 22);
+            resolution3.Text = "⛶   1080p";
+            resolution3.Click += resolution3_Click;
             // 
-            // toolStripMenuItem4
+            // resetRes
             // 
-            toolStripMenuItem4.Name = "toolStripMenuItem4";
-            toolStripMenuItem4.Size = new Size(99, 22);
-            toolStripMenuItem4.Text = "❌   Reset";
+            resetRes.Name = "resetRes";
+            resetRes.Size = new Size(99, 22);
+            resetRes.Text = "❌   Reset";
+            resetRes.Click += resetRes_Click;
             // 
             // volumeSlider
             // 
@@ -205,7 +225,7 @@
             bSwitchPageOnPlay.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bSwitchPageOnPlay.FlatStyle = FlatStyle.Flat;
             bSwitchPageOnPlay.Font = new Font("Bahnschrift SemiLight", 20F);
-            bSwitchPageOnPlay.Location = new Point(112, 43);
+            bSwitchPageOnPlay.Location = new Point(125, 42);
             bSwitchPageOnPlay.Name = "bSwitchPageOnPlay";
             bSwitchPageOnPlay.Size = new Size(20, 20);
             bSwitchPageOnPlay.TabIndex = 10;
@@ -244,7 +264,7 @@
             bRepeat.FlatAppearance.MouseOverBackColor = SystemColors.ControlLight;
             bRepeat.FlatStyle = FlatStyle.Flat;
             bRepeat.Font = new Font("Bahnschrift SemiLight", 20F);
-            bRepeat.Location = new Point(81, 43);
+            bRepeat.Location = new Point(94, 42);
             bRepeat.Name = "bRepeat";
             bRepeat.Size = new Size(20, 20);
             bRepeat.TabIndex = 8;
@@ -315,23 +335,22 @@
             mainPanel.BackColor = Color.FromArgb(28, 30, 32);
             mainPanel.Controls.Add(mediaViewer);
             mainPanel.ForeColor = Color.DarkGray;
-            mainPanel.Location = new Point(1, 30);
+            mainPanel.Location = new Point(-1, 30);
             mainPanel.Name = "mainPanel";
-            mainPanel.Size = new Size(491, 465);
+            mainPanel.Size = new Size(495, 401);
             mainPanel.TabIndex = 1;
             mainPanel.DragDrop += mainPanel_DragDrop;
             mainPanel.DragEnter += mainPanel_DragEnter;
-            mainPanel.Paint += mainPanel_Paint;
             mainPanel.MouseDoubleClick += mainPanel_MouseDoubleClick;
             // 
             // mediaViewer
             // 
             mediaViewer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            mediaViewer.BackColor = Color.Black;
-            mediaViewer.Location = new Point(2, 8);
+            mediaViewer.BackColor = Color.FromArgb(45, 45, 45);
+            mediaViewer.Location = new Point(0, 0);
             mediaViewer.MediaPlayer = null;
             mediaViewer.Name = "mediaViewer";
-            mediaViewer.Size = new Size(487, 453);
+            mediaViewer.Size = new Size(495, 402);
             mediaViewer.TabIndex = 0;
             mediaViewer.Text = "videoView1";
             // 
@@ -342,19 +361,18 @@
             browserPanel.BackColor = Color.FromArgb(28, 30, 32);
             browserPanel.Controls.Add(panelBrowser);
             browserPanel.ForeColor = Color.DarkGray;
-            browserPanel.Location = new Point(1, 30);
+            browserPanel.Location = new Point(0, 30);
             browserPanel.Name = "browserPanel";
-            browserPanel.Size = new Size(492, 465);
+            browserPanel.Size = new Size(493, 400);
             browserPanel.TabIndex = 2;
             // 
             // panelBrowser
             // 
             panelBrowser.AllowDrop = true;
             panelBrowser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            panelBrowser.AutoScroll = true;
-            panelBrowser.Location = new Point(1, 5);
+            panelBrowser.Location = new Point(0, 3);
             panelBrowser.Name = "panelBrowser";
-            panelBrowser.Size = new Size(490, 456);
+            panelBrowser.Size = new Size(493, 397);
             panelBrowser.TabIndex = 7;
             panelBrowser.DragDrop += panelBrowser_DragDrop;
             panelBrowser.DragEnter += panelBrowser_DragEnter;
@@ -414,76 +432,16 @@
             settingsPanel.AllowDrop = true;
             settingsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             settingsPanel.BackColor = Color.FromArgb(28, 30, 32);
-            settingsPanel.Controls.Add(bResetWindowSize);
-            settingsPanel.Controls.Add(label1);
-            settingsPanel.Controls.Add(chkUseLastTimestamp);
-            settingsPanel.Controls.Add(chkAutoloadFolder);
-            settingsPanel.Controls.Add(chkPlayLastUsedTrack);
             settingsPanel.Controls.Add(lblAvailableFolders);
             settingsPanel.Controls.Add(availableFolders);
+            settingsPanel.Controls.Add(panelSettings);
             settingsPanel.Controls.Add(settingsContent);
             settingsPanel.Font = new Font("Bahnschrift SemiLight", 10F);
             settingsPanel.ForeColor = Color.DarkGray;
             settingsPanel.Location = new Point(1, 30);
             settingsPanel.Name = "settingsPanel";
-            settingsPanel.Size = new Size(491, 465);
+            settingsPanel.Size = new Size(492, 400);
             settingsPanel.TabIndex = 5;
-            // 
-            // bResetWindowSize
-            // 
-            bResetWindowSize.Cursor = Cursors.Hand;
-            bResetWindowSize.ForeColor = Color.Black;
-            bResetWindowSize.Location = new Point(29, 182);
-            bResetWindowSize.Name = "bResetWindowSize";
-            bResetWindowSize.Size = new Size(176, 38);
-            bResetWindowSize.TabIndex = 15;
-            bResetWindowSize.Text = "📐 Reset window size";
-            bResetWindowSize.UseVisualStyleBackColor = true;
-            bResetWindowSize.Click += bResetWindowSize_Click;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Bahnschrift SemiLight", 12F);
-            label1.ForeColor = Color.FromArgb(64, 64, 64);
-            label1.Location = new Point(29, 119);
-            label1.Name = "label1";
-            label1.Size = new Size(23, 19);
-            label1.TabIndex = 14;
-            label1.Text = "└─";
-            // 
-            // chkUseLastTimestamp
-            // 
-            chkUseLastTimestamp.AutoSize = true;
-            chkUseLastTimestamp.Location = new Point(58, 120);
-            chkUseLastTimestamp.Name = "chkUseLastTimestamp";
-            chkUseLastTimestamp.Size = new Size(196, 21);
-            chkUseLastTimestamp.TabIndex = 13;
-            chkUseLastTimestamp.Text = "Resume where you left off";
-            chkUseLastTimestamp.UseVisualStyleBackColor = true;
-            chkUseLastTimestamp.CheckedChanged += chkUseLastTimestamp_CheckedChanged;
-            // 
-            // chkAutoloadFolder
-            // 
-            chkAutoloadFolder.AutoSize = true;
-            chkAutoloadFolder.Location = new Point(29, 151);
-            chkAutoloadFolder.Name = "chkAutoloadFolder";
-            chkAutoloadFolder.Size = new Size(190, 21);
-            chkAutoloadFolder.TabIndex = 12;
-            chkAutoloadFolder.Text = "Auto-load topmost folder";
-            chkAutoloadFolder.UseVisualStyleBackColor = true;
-            chkAutoloadFolder.CheckedChanged += chkAutoloadFolder_CheckedChanged;
-            // 
-            // chkPlayLastUsedTrack
-            // 
-            chkPlayLastUsedTrack.AutoSize = true;
-            chkPlayLastUsedTrack.Location = new Point(29, 90);
-            chkPlayLastUsedTrack.Name = "chkPlayLastUsedTrack";
-            chkPlayLastUsedTrack.Size = new Size(206, 21);
-            chkPlayLastUsedTrack.TabIndex = 11;
-            chkPlayLastUsedTrack.Text = "Play last used track on start";
-            chkPlayLastUsedTrack.UseVisualStyleBackColor = true;
-            chkPlayLastUsedTrack.CheckedChanged += chkPlayLastUsedTrack_CheckedChanged;
             // 
             // lblAvailableFolders
             // 
@@ -491,7 +449,7 @@
             lblAvailableFolders.Font = new Font("Bahnschrift SemiLight", 9F);
             lblAvailableFolders.Location = new Point(3, 5);
             lblAvailableFolders.Name = "lblAvailableFolders";
-            lblAvailableFolders.Size = new Size(485, 38);
+            lblAvailableFolders.Size = new Size(486, 38);
             lblAvailableFolders.TabIndex = 1;
             lblAvailableFolders.Text = "🗂 Available folders";
             lblAvailableFolders.TextAlign = ContentAlignment.MiddleCenter;
@@ -503,12 +461,129 @@
             availableFolders.DropDownStyle = ComboBoxStyle.DropDownList;
             availableFolders.Font = new Font("Bahnschrift SemiLight", 13F);
             availableFolders.FormattingEnabled = true;
-            availableFolders.Items.AddRange(new object[] { "➕ Add new folder" });
+            availableFolders.Items.AddRange(new object[] { "➕ Add new folder", "⚙️ Settings" });
             availableFolders.Location = new Point(29, 46);
             availableFolders.Name = "availableFolders";
-            availableFolders.Size = new Size(433, 29);
+            availableFolders.Size = new Size(434, 29);
             availableFolders.TabIndex = 0;
             availableFolders.SelectedIndexChanged += availableFolders_SelectedIndexChanged;
+            // 
+            // panelSettings
+            // 
+            panelSettings.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panelSettings.Controls.Add(chkResetWindowSizeOnStartup);
+            panelSettings.Controls.Add(chkAutoOpenVideos);
+            panelSettings.Controls.Add(chkHideScroll);
+            panelSettings.Controls.Add(bResetWindowSize);
+            panelSettings.Controls.Add(chkPlayLastUsedTrack);
+            panelSettings.Controls.Add(label1);
+            panelSettings.Controls.Add(chkAutoloadFolder);
+            panelSettings.Controls.Add(chkUseLastTimestamp);
+            panelSettings.Location = new Point(11, 93);
+            panelSettings.Name = "panelSettings";
+            panelSettings.Size = new Size(470, 272);
+            panelSettings.TabIndex = 16;
+            // 
+            // chkResetWindowSizeOnStartup
+            // 
+            chkResetWindowSizeOnStartup.AutoSize = true;
+            chkResetWindowSizeOnStartup.Cursor = Cursors.Hand;
+            chkResetWindowSizeOnStartup.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkResetWindowSizeOnStartup.Location = new Point(18, 201);
+            chkResetWindowSizeOnStartup.Name = "chkResetWindowSizeOnStartup";
+            chkResetWindowSizeOnStartup.Size = new Size(218, 21);
+            chkResetWindowSizeOnStartup.TabIndex = 18;
+            chkResetWindowSizeOnStartup.Text = "Reset window size on startup";
+            chkResetWindowSizeOnStartup.UseVisualStyleBackColor = true;
+            chkResetWindowSizeOnStartup.CheckedChanged += chkResetWindowSizeOnStartup_CheckedChanged;
+            // 
+            // chkAutoOpenVideos
+            // 
+            chkAutoOpenVideos.AutoSize = true;
+            chkAutoOpenVideos.Cursor = Cursors.Hand;
+            chkAutoOpenVideos.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkAutoOpenVideos.Location = new Point(18, 164);
+            chkAutoOpenVideos.Name = "chkAutoOpenVideos";
+            chkAutoOpenVideos.Size = new Size(227, 21);
+            chkAutoOpenVideos.TabIndex = 17;
+            chkAutoOpenVideos.Text = "Auto-open video tab for videos";
+            chkAutoOpenVideos.UseVisualStyleBackColor = true;
+            chkAutoOpenVideos.CheckedChanged += chkAutoOpenVideos_CheckedChanged;
+            // 
+            // chkHideScroll
+            // 
+            chkHideScroll.AutoSize = true;
+            chkHideScroll.Cursor = Cursors.Hand;
+            chkHideScroll.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkHideScroll.Location = new Point(18, 127);
+            chkHideScroll.Name = "chkHideScroll";
+            chkHideScroll.Size = new Size(186, 21);
+            chkHideScroll.TabIndex = 16;
+            chkHideScroll.Text = "Hide browsing scroll bar";
+            chkHideScroll.UseVisualStyleBackColor = true;
+            chkHideScroll.CheckedChanged += chkHideScroll_CheckedChanged;
+            // 
+            // bResetWindowSize
+            // 
+            bResetWindowSize.Cursor = Cursors.Hand;
+            bResetWindowSize.ForeColor = Color.Black;
+            bResetWindowSize.Location = new Point(276, 18);
+            bResetWindowSize.Name = "bResetWindowSize";
+            bResetWindowSize.Size = new Size(176, 38);
+            bResetWindowSize.TabIndex = 15;
+            bResetWindowSize.Text = "📐 Reset window size";
+            bResetWindowSize.UseVisualStyleBackColor = true;
+            bResetWindowSize.Click += bResetWindowSize_Click;
+            // 
+            // chkPlayLastUsedTrack
+            // 
+            chkPlayLastUsedTrack.AutoSize = true;
+            chkPlayLastUsedTrack.Cursor = Cursors.Hand;
+            chkPlayLastUsedTrack.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkPlayLastUsedTrack.Location = new Point(18, 18);
+            chkPlayLastUsedTrack.Name = "chkPlayLastUsedTrack";
+            chkPlayLastUsedTrack.Size = new Size(206, 21);
+            chkPlayLastUsedTrack.TabIndex = 11;
+            chkPlayLastUsedTrack.Text = "Play last used track on start";
+            chkPlayLastUsedTrack.UseVisualStyleBackColor = true;
+            chkPlayLastUsedTrack.CheckedChanged += chkPlayLastUsedTrack_CheckedChanged;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new Font("Bahnschrift SemiLight", 12F);
+            label1.ForeColor = Color.FromArgb(64, 64, 64);
+            label1.Location = new Point(18, 52);
+            label1.Name = "label1";
+            label1.Size = new Size(23, 19);
+            label1.TabIndex = 14;
+            label1.Text = "└─";
+            // 
+            // chkAutoloadFolder
+            // 
+            chkAutoloadFolder.AutoSize = true;
+            chkAutoloadFolder.Cursor = Cursors.Hand;
+            chkAutoloadFolder.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkAutoloadFolder.Location = new Point(18, 90);
+            chkAutoloadFolder.Name = "chkAutoloadFolder";
+            chkAutoloadFolder.Size = new Size(190, 21);
+            chkAutoloadFolder.TabIndex = 12;
+            chkAutoloadFolder.Text = "Auto-load topmost folder";
+            chkAutoloadFolder.UseVisualStyleBackColor = true;
+            chkAutoloadFolder.CheckedChanged += chkAutoloadFolder_CheckedChanged;
+            // 
+            // chkUseLastTimestamp
+            // 
+            chkUseLastTimestamp.AutoSize = true;
+            chkUseLastTimestamp.Cursor = Cursors.Hand;
+            chkUseLastTimestamp.FlatAppearance.MouseOverBackColor = Color.DimGray;
+            chkUseLastTimestamp.Location = new Point(47, 53);
+            chkUseLastTimestamp.Name = "chkUseLastTimestamp";
+            chkUseLastTimestamp.Size = new Size(196, 21);
+            chkUseLastTimestamp.TabIndex = 13;
+            chkUseLastTimestamp.Text = "Resume where you left off";
+            chkUseLastTimestamp.UseVisualStyleBackColor = true;
+            chkUseLastTimestamp.CheckedChanged += chkUseLastTimestamp_CheckedChanged;
             // 
             // settingsContent
             // 
@@ -520,9 +595,9 @@
             settingsContent.Controls.Add(lblFolderName);
             settingsContent.Controls.Add(bBrowseFolder);
             settingsContent.Controls.Add(bRemoveFolder);
-            settingsContent.Location = new Point(11, 224);
+            settingsContent.Location = new Point(11, 93);
             settingsContent.Name = "settingsContent";
-            settingsContent.Size = new Size(469, 224);
+            settingsContent.Size = new Size(470, 272);
             settingsContent.TabIndex = 10;
             settingsContent.Visible = false;
             // 
@@ -531,7 +606,7 @@
             bFactoryReset.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             bFactoryReset.Cursor = Cursors.Hand;
             bFactoryReset.ForeColor = Color.IndianRed;
-            bFactoryReset.Location = new Point(137, 169);
+            bFactoryReset.Location = new Point(138, 179);
             bFactoryReset.Name = "bFactoryReset";
             bFactoryReset.Size = new Size(132, 38);
             bFactoryReset.TabIndex = 10;
@@ -546,7 +621,7 @@
             panel1.Controls.Add(barAddress);
             panel1.Location = new Point(18, 50);
             panel1.Name = "panel1";
-            panel1.Size = new Size(390, 34);
+            panel1.Size = new Size(391, 34);
             panel1.TabIndex = 8;
             // 
             // barAddress
@@ -560,7 +635,7 @@
             barAddress.Location = new Point(6, 4);
             barAddress.Name = "barAddress";
             barAddress.PlaceholderText = "The path of the audio folder";
-            barAddress.Size = new Size(379, 20);
+            barAddress.Size = new Size(380, 20);
             barAddress.TabIndex = 3;
             // 
             // panel2
@@ -568,9 +643,9 @@
             panel2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             panel2.BorderStyle = BorderStyle.FixedSingle;
             panel2.Controls.Add(barFolderName);
-            panel2.Location = new Point(18, 129);
+            panel2.Location = new Point(18, 139);
             panel2.Name = "panel2";
-            panel2.Size = new Size(433, 34);
+            panel2.Size = new Size(434, 34);
             panel2.TabIndex = 9;
             // 
             // barFolderName
@@ -584,7 +659,7 @@
             barFolderName.Location = new Point(6, 4);
             barFolderName.Name = "barFolderName";
             barFolderName.PlaceholderText = "The folder alias";
-            barFolderName.Size = new Size(422, 20);
+            barFolderName.Size = new Size(423, 20);
             barFolderName.TabIndex = 5;
             barFolderName.KeyDown += barFolderName_KeyDown;
             // 
@@ -595,7 +670,7 @@
             lblAddress.Location = new Point(18, 18);
             lblAddress.Name = "lblAddress";
             lblAddress.Padding = new Padding(5, 0, 0, 0);
-            lblAddress.Size = new Size(433, 29);
+            lblAddress.Size = new Size(434, 29);
             lblAddress.TabIndex = 2;
             lblAddress.Text = "🔗 Address";
             lblAddress.TextAlign = ContentAlignment.MiddleLeft;
@@ -604,10 +679,10 @@
             // 
             lblFolderName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             lblFolderName.Font = new Font("Bahnschrift SemiLight", 9F);
-            lblFolderName.Location = new Point(18, 97);
+            lblFolderName.Location = new Point(18, 107);
             lblFolderName.Name = "lblFolderName";
             lblFolderName.Padding = new Padding(5, 0, 0, 0);
-            lblFolderName.Size = new Size(433, 29);
+            lblFolderName.Size = new Size(434, 29);
             lblFolderName.TabIndex = 4;
             lblFolderName.Text = "✏️ Type folder name";
             lblFolderName.TextAlign = ContentAlignment.MiddleLeft;
@@ -623,9 +698,9 @@
             bBrowseFolder.FlatAppearance.MouseDownBackColor = Color.FromArgb(54, 56, 58);
             bBrowseFolder.FlatAppearance.MouseOverBackColor = Color.FromArgb(54, 56, 58);
             bBrowseFolder.FlatStyle = FlatStyle.Flat;
-            bBrowseFolder.Location = new Point(416, 57);
+            bBrowseFolder.Location = new Point(418, 52);
             bBrowseFolder.Name = "bBrowseFolder";
-            bBrowseFolder.Size = new Size(21, 21);
+            bBrowseFolder.Size = new Size(30, 30);
             bBrowseFolder.TabIndex = 7;
             bBrowseFolder.UseVisualStyleBackColor = true;
             bBrowseFolder.Click += bBrowseFolder_Click;
@@ -636,7 +711,7 @@
             bRemoveFolder.Cursor = Cursors.Hand;
             bRemoveFolder.Enabled = false;
             bRemoveFolder.ForeColor = Color.Black;
-            bRemoveFolder.Location = new Point(275, 169);
+            bRemoveFolder.Location = new Point(276, 179);
             bRemoveFolder.Name = "bRemoveFolder";
             bRemoveFolder.Size = new Size(176, 38);
             bRemoveFolder.TabIndex = 6;
@@ -654,20 +729,20 @@
             AutoScaleDimensions = new SizeF(8F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlLight;
-            ClientSize = new Size(493, 568);
+            ClientSize = new Size(493, 503);
             Controls.Add(bSettings);
             Controls.Add(browseFolders);
             Controls.Add(bDrawer);
             Controls.Add(controlPanel);
-            Controls.Add(settingsPanel);
             Controls.Add(mainPanel);
             Controls.Add(browserPanel);
+            Controls.Add(settingsPanel);
             Font = new Font("Bahnschrift SemiLight", 11F);
             ForeColor = Color.FromArgb(28, 28, 28);
             Icon = (Icon)resources.GetObject("$this.Icon");
             KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
-            MinimumSize = new Size(309, 142);
+            MinimumSize = new Size(509, 542);
             Name = "mainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "ReFrame";
@@ -681,7 +756,8 @@
             ((System.ComponentModel.ISupportInitialize)mediaViewer).EndInit();
             browserPanel.ResumeLayout(false);
             settingsPanel.ResumeLayout(false);
-            settingsPanel.PerformLayout();
+            panelSettings.ResumeLayout(false);
+            panelSettings.PerformLayout();
             settingsContent.ResumeLayout(false);
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
@@ -730,9 +806,14 @@
         private Button bResetWindowSize;
         private Button bResizeWindow;
         private ContextMenuStrip resolutionStrip;
-        private ToolStripMenuItem toolStripMenuItem1;
-        private ToolStripMenuItem toolStripMenuItem2;
-        private ToolStripMenuItem toolStripMenuItem3;
-        private ToolStripMenuItem toolStripMenuItem4;
+        private ToolStripMenuItem resolution1;
+        private ToolStripMenuItem resolution2;
+        private ToolStripMenuItem resolution3;
+        private ToolStripMenuItem resetRes;
+        private Panel panelSettings;
+        private CheckBox chkHideScroll;
+        private Panel panelSeparator1;
+        private CheckBox chkAutoOpenVideos;
+        private CheckBox chkResetWindowSizeOnStartup;
     }
 }
