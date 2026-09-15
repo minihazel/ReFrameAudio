@@ -1049,10 +1049,13 @@ namespace ReFrameAudio
 
             isStopped = true;
             isPaused = false;
+            mediaStatus.Visible = true;
         }
 
         private void playAudio(string filePath)
         {
+            mediaStatus.Visible = false;
+
             string? lastSavedTrack = Properties.Settings.Default.currentFilePath;
             long savedMs = Properties.Settings.Default.lastPlayback;
 

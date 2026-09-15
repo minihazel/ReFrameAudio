@@ -77,6 +77,7 @@
             bBrowseFolder = new Button();
             bRemoveFolder = new Button();
             videoToolTip = new ToolTip(components);
+            mediaStatus = new Label();
             controlPanel.SuspendLayout();
             resolutionStrip.SuspendLayout();
             mainPanel.SuspendLayout();
@@ -333,6 +334,7 @@
             mainPanel.AllowDrop = true;
             mainPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             mainPanel.BackColor = Color.FromArgb(28, 30, 32);
+            mainPanel.Controls.Add(mediaStatus);
             mainPanel.Controls.Add(mediaViewer);
             mainPanel.ForeColor = Color.DarkGray;
             mainPanel.Location = new Point(-1, 30);
@@ -723,6 +725,19 @@
             // 
             videoToolTip.ToolTipTitle = "File information";
             // 
+            // mediaStatus
+            // 
+            mediaStatus.Anchor = AnchorStyles.None;
+            mediaStatus.AutoSize = true;
+            mediaStatus.BackColor = Color.FromArgb(45, 45, 45);
+            mediaStatus.Font = new Font("Bahnschrift Light", 11F);
+            mediaStatus.ForeColor = Color.Gray;
+            mediaStatus.Location = new Point(128, 191);
+            mediaStatus.Name = "mediaStatus";
+            mediaStatus.Size = new Size(239, 18);
+            mediaStatus.TabIndex = 1;
+            mediaStatus.Text = "🖥 Videos you play will show here!";
+            // 
             // mainForm
             // 
             AllowDrop = true;
@@ -753,6 +768,7 @@
             controlPanel.ResumeLayout(false);
             resolutionStrip.ResumeLayout(false);
             mainPanel.ResumeLayout(false);
+            mainPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)mediaViewer).EndInit();
             browserPanel.ResumeLayout(false);
             settingsPanel.ResumeLayout(false);
@@ -815,5 +831,6 @@
         private Panel panelSeparator1;
         private CheckBox chkAutoOpenVideos;
         private CheckBox chkResetWindowSizeOnStartup;
+        private Label mediaStatus;
     }
 }
